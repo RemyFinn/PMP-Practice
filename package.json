@@ -1,0 +1,23 @@
+{
+  "name": "pmp-practice-system",
+  "version": "1.0.0",
+  "description": "本地 Web 做题系统，导入四套 PMP 模拟题 Markdown 和 Excel 阅卷结果，使用 FastAPI + SQLite 保存题库、错题集和作答记录。",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "verify": "npm run build && .venv/bin/python scripts/verify_api.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "lucide-react": "^1.17.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.0.16"
+  }
+}
