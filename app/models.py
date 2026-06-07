@@ -24,6 +24,9 @@ class QuestionOut(BaseModel):
     imported_judgement: str = ""
     imported_note: str = ""
     is_wrong_active: bool = False
+    wrong_count: int = 0
+    attempt_count: int = 0
+    last_wrong_at: str | None = None
     options: list[OptionOut]
 
 
@@ -51,12 +54,23 @@ class AttemptOut(BaseModel):
     explanation: str
     is_wrong_active: bool
     elapsed_seconds: int | None = None
+    wrong_count: int = 0
+    attempt_count: int = 0
+    last_wrong_at: str | None = None
 
 
 class WrongItemPatch(BaseModel):
     active: bool | None = None
     learned: bool | None = None
     source: str = "manual"
+
+
+class WrongCountPatch(BaseModel):
+    wrong_count: int = Field(ge=0)
+
+
+class AttemptCountPatch(BaseModel):
+    attempt_count: int = Field(ge=0)
 
 
 class OptionIn(BaseModel):

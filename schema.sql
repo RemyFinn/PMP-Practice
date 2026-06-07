@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS wrong_items (
     question_id INTEGER NOT NULL UNIQUE,
     active INTEGER NOT NULL DEFAULT 1,
     source TEXT NOT NULL DEFAULT 'manual',
+    wrong_count_delta INTEGER NOT NULL DEFAULT 0,
+    attempt_count_delta INTEGER NOT NULL DEFAULT 0,
     added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     learned_at TEXT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

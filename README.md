@@ -12,7 +12,7 @@ pip install fastapi uvicorn openpyxl
 npm install
 npm run build
 python -m app.import_data
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 浏览器访问：

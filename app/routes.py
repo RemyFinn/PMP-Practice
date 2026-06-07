@@ -5,11 +5,13 @@ from fastapi import APIRouter, HTTPException, Query
 from .db import transaction
 from .models import (
     AttemptIn,
+    AttemptCountPatch,
     AttemptOut,
     ExamOut,
     QuestionCreate,
     QuestionOut,
     QuestionUpdate,
+    WrongCountPatch,
     WrongItemPatch,
 )
 from .utils import is_answer_correct, normalize_answer, normalize_correct_answer
@@ -17,14 +19,28 @@ from .utils import is_answer_correct, normalize_answer, normalize_correct_answer
 router = APIRouter(prefix="/api")
 
 
+QUESTION_STATS_SQL = """
+    SELECT question_id,
+           COUNT(*) AS attempt_count,
+           SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) AS raw_wrong_count,
+           MAX(CASE WHEN is_correct = 0 THEN created_at ELSE NULL END) AS last_wrong_at
+    FROM attempts
+    GROUP BY question_id
+"""
+
+
 def fetch_question(conn, question_id: int) -> dict:
     row = conn.execute(
-        """
+        f"""
         SELECT q.*, e.code AS exam_code, e.title AS exam_title,
-               COALESCE(w.active, 0) AS is_wrong_active
+               COALESCE(w.active, 0) AS is_wrong_active,
+               MAX(0, COALESCE(s.raw_wrong_count, 0) + COALESCE(w.wrong_count_delta, 0)) AS wrong_count,
+               MAX(0, COALESCE(s.attempt_count, 0) + COALESCE(w.attempt_count_delta, 0)) AS attempt_count,
+               s.last_wrong_at AS last_wrong_at
         FROM questions q
         JOIN exams e ON e.id = q.exam_id
         LEFT JOIN wrong_items w ON w.question_id = q.id
+        LEFT JOIN ({QUESTION_STATS_SQL}) s ON s.question_id = q.id
         WHERE q.id = ? AND q.deleted_at IS NULL
         """,
         (question_id,),
@@ -56,6 +72,9 @@ def build_question(conn, row: dict) -> QuestionOut:
         imported_judgement=row["imported_judgement"] or "",
         imported_note=row["imported_note"] or "",
         is_wrong_active=bool(row["is_wrong_active"]),
+        wrong_count=int(row.get("wrong_count") or 0),
+        attempt_count=int(row.get("attempt_count") or 0),
+        last_wrong_at=row.get("last_wrong_at"),
         options=fetch_options(conn, row["id"]),
     )
 
@@ -64,15 +83,15 @@ def build_question(conn, row: dict) -> QuestionOut:
 def list_exams() -> list[ExamOut]:
     with transaction() as conn:
         rows = conn.execute(
-            """
+            f"""
             SELECT e.id, e.code, e.title,
-                   COUNT(DISTINCT q.id) AS total_questions,
-                   COUNT(DISTINCT CASE WHEN w.active = 1 THEN q.id END) AS wrong_questions,
-                   COUNT(DISTINCT a.id) AS attempts
+                   COUNT(q.id) AS total_questions,
+                   COUNT(CASE WHEN COALESCE(w.active, 0) = 1 THEN q.id END) AS wrong_questions,
+                   COALESCE(SUM(MAX(0, COALESCE(s.attempt_count, 0) + COALESCE(w.attempt_count_delta, 0))), 0) AS attempts
             FROM exams e
             LEFT JOIN questions q ON q.exam_id = e.id AND q.deleted_at IS NULL
-            LEFT JOIN wrong_items w ON w.question_id = q.id AND w.active = 1
-            LEFT JOIN attempts a ON a.question_id = q.id
+            LEFT JOIN wrong_items w ON w.question_id = q.id
+            LEFT JOIN ({QUESTION_STATS_SQL}) s ON s.question_id = q.id
             GROUP BY e.id
             ORDER BY e.code
             """
@@ -97,19 +116,32 @@ def list_questions(
         params.append(exam)
     elif mode == "wrong":
         where.append("COALESCE(w.active, 0) = 1")
+        if exam:
+            where.append("e.code = ?")
+            params.append(exam)
 
     if search:
         where.append("(q.stem LIKE ? OR q.explanation LIKE ? OR q.correct_answer LIKE ?)")
         like = f"%{search}%"
         params.extend([like, like, like])
 
-    order_by = "RANDOM()" if shuffle else "e.code, q.number"
+    if shuffle:
+        order_by = "RANDOM()"
+    elif mode == "wrong":
+        order_by = "wrong_count DESC, last_wrong_at DESC, e.code, q.number"
+    else:
+        order_by = "e.code, q.number"
+
     sql = f"""
         SELECT q.*, e.code AS exam_code, e.title AS exam_title,
-               COALESCE(w.active, 0) AS is_wrong_active
+               COALESCE(w.active, 0) AS is_wrong_active,
+               MAX(0, COALESCE(s.raw_wrong_count, 0) + COALESCE(w.wrong_count_delta, 0)) AS wrong_count,
+               MAX(0, COALESCE(s.attempt_count, 0) + COALESCE(w.attempt_count_delta, 0)) AS attempt_count,
+               s.last_wrong_at AS last_wrong_at
         FROM questions q
         JOIN exams e ON e.id = q.exam_id
         LEFT JOIN wrong_items w ON w.question_id = q.id
+        LEFT JOIN ({QUESTION_STATS_SQL}) s ON s.question_id = q.id
         WHERE {" AND ".join(where)}
         ORDER BY {order_by}
     """
@@ -150,6 +182,10 @@ def submit_attempt(payload: AttemptIn) -> AttemptOut:
             "SELECT active FROM wrong_items WHERE question_id = ?",
             (payload.question_id,),
         ).fetchone()
+        stats = conn.execute(
+            f"SELECT * FROM ({QUESTION_STATS_SQL}) WHERE question_id = ?",
+            (payload.question_id,),
+        ).fetchone()
         return AttemptOut(
             question_id=payload.question_id,
             selected_answer=selected_answer,
@@ -158,6 +194,9 @@ def submit_attempt(payload: AttemptIn) -> AttemptOut:
             explanation=question["explanation"],
             is_wrong_active=bool(wrong["active"]) if wrong else False,
             elapsed_seconds=elapsed_seconds,
+            wrong_count=int(fetch_question(conn, payload.question_id)["wrong_count"] or 0),
+            attempt_count=int(fetch_question(conn, payload.question_id)["attempt_count"] or 0),
+            last_wrong_at=stats["last_wrong_at"] if stats else None,
         )
 
 
@@ -196,6 +235,68 @@ def patch_wrong_item(question_id: int, payload: WrongItemPatch) -> dict:
             (question_id,),
         ).fetchone()
         return {"question_id": question_id, "active": bool(row["active"]), "learned_at": row["learned_at"]}
+
+
+@router.patch("/questions/{question_id}/wrong-count", response_model=QuestionOut)
+def patch_wrong_count(question_id: int, payload: WrongCountPatch) -> QuestionOut:
+    with transaction() as conn:
+        fetch_question(conn, question_id)
+        raw = conn.execute(
+            """
+            SELECT SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) AS raw_wrong_count
+            FROM attempts
+            WHERE question_id = ?
+            """,
+            (question_id,),
+        ).fetchone()
+        raw_wrong_count = int(raw["raw_wrong_count"] or 0) if raw else 0
+        target_wrong_count = max(0, int(payload.wrong_count))
+        delta = target_wrong_count - raw_wrong_count
+        active = int(target_wrong_count > 0)
+        learned_at_sql = "NULL" if active else "CURRENT_TIMESTAMP"
+        conn.execute(
+            f"""
+            INSERT INTO wrong_items (question_id, active, source, wrong_count_delta, added_at, learned_at, updated_at)
+            VALUES (?, ?, 'manual_adjustment', ?, CURRENT_TIMESTAMP, {learned_at_sql}, CURRENT_TIMESTAMP)
+            ON CONFLICT(question_id) DO UPDATE SET
+                active = excluded.active,
+                source = 'manual_adjustment',
+                wrong_count_delta = excluded.wrong_count_delta,
+                learned_at = excluded.learned_at,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (question_id, active, delta),
+        )
+        return build_question(conn, fetch_question(conn, question_id))
+
+
+@router.patch("/questions/{question_id}/attempt-count", response_model=QuestionOut)
+def patch_attempt_count(question_id: int, payload: AttemptCountPatch) -> QuestionOut:
+    with transaction() as conn:
+        fetch_question(conn, question_id)
+        raw = conn.execute(
+            """
+            SELECT COUNT(*) AS raw_attempt_count
+            FROM attempts
+            WHERE question_id = ?
+            """,
+            (question_id,),
+        ).fetchone()
+        raw_attempt_count = int(raw["raw_attempt_count"] or 0) if raw else 0
+        target_attempt_count = max(0, int(payload.attempt_count))
+        delta = target_attempt_count - raw_attempt_count
+        conn.execute(
+            """
+            INSERT INTO wrong_items (question_id, active, source, attempt_count_delta, added_at, updated_at)
+            VALUES (?, 0, 'manual_adjustment', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(question_id) DO UPDATE SET
+                source = 'manual_adjustment',
+                attempt_count_delta = excluded.attempt_count_delta,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (question_id, delta),
+        )
+        return build_question(conn, fetch_question(conn, question_id))
 
 
 @router.post("/questions", response_model=QuestionOut)

@@ -39,6 +39,11 @@ def init_db() -> None:
         columns = {row["name"] for row in conn.execute("PRAGMA table_info(attempts)").fetchall()}
         if "elapsed_seconds" not in columns:
             conn.execute("ALTER TABLE attempts ADD COLUMN elapsed_seconds INTEGER")
+        wrong_columns = {row["name"] for row in conn.execute("PRAGMA table_info(wrong_items)").fetchall()}
+        if "wrong_count_delta" not in wrong_columns:
+            conn.execute("ALTER TABLE wrong_items ADD COLUMN wrong_count_delta INTEGER NOT NULL DEFAULT 0")
+        if "attempt_count_delta" not in wrong_columns:
+            conn.execute("ALTER TABLE wrong_items ADD COLUMN attempt_count_delta INTEGER NOT NULL DEFAULT 0")
 
 
 def row_to_dict(row: sqlite3.Row | None) -> dict | None:
