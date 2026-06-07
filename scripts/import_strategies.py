@@ -42,6 +42,11 @@ SECTION_NAMES = {
 }
 
 
+SECTION_ALIASES = {
+    "预测/三大基准管理": "三大基准管理",
+}
+
+
 def extract_text(path: Path) -> str:
     reader = PdfReader(str(path))
     return "\n".join(page.extract_text() or "" for page in reader.pages)
@@ -60,13 +65,27 @@ def clean_text(text: str) -> str:
 
 def parse_numbers(value: str) -> tuple[int, ...]:
     nums = [int(item) for item in re.findall(r"\d{1,3}", value)]
-    return tuple(number for number in nums if 1 <= number <= 180)
+    result: list[int] = []
+    seen: set[int] = set()
+    for number in nums:
+        if 1 <= number <= 180 and number not in seen:
+            result.append(number)
+            seen.add(number)
+    return tuple(result)
 
 
 def normalize_title(value: str) -> str:
     value = re.sub(r"\s+", "", value)
     value = value.strip("。；;，,：:")
     return value
+
+
+def split_title_and_numbers(value: str) -> tuple[str, tuple[int, ...]]:
+    matches = list(re.finditer(r"[（(]([^（）()]*\d[^（）()]*)[）)]", value))
+    if not matches:
+        return value, ()
+    number_match = matches[-1]
+    return value[: number_match.start()], parse_numbers(number_match.group(1))
 
 
 def parse_summary_pdf(exam_code: str, path: Path) -> list[StrategyItem]:
@@ -81,12 +100,11 @@ def parse_summary_pdf(exam_code: str, path: Path) -> list[StrategyItem]:
         nonlocal buffer, order
         if not buffer:
             return
-        numbers = parse_numbers(buffer)
+        content = re.sub(r"^\d+\.\s*", "", buffer)
+        title, numbers = split_title_and_numbers(content)
         if not numbers:
             buffer = ""
             return
-        title = re.sub(r"^\d+\.\s*", "", buffer)
-        title = re.sub(r"[（(][^（）()]*\d[^（）()]*[）)].*$", "", title)
         title = normalize_title(title)
         if title:
             order += 1
@@ -104,9 +122,10 @@ def parse_summary_pdf(exam_code: str, path: Path) -> list[StrategyItem]:
         buffer = ""
 
     for line in lines:
-        if line in SECTION_NAMES:
+        section_name = SECTION_ALIASES.get(line, line)
+        if section_name in SECTION_NAMES:
             flush()
-            category = line
+            category = section_name
             continue
         if re.match(r"^\d+\.\s*", line):
             flush()
