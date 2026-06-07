@@ -31,6 +31,9 @@ def answer_list(answer: str) -> list[str]:
 def main() -> None:
     html = req("/")
     assert "PMP 做题系统" in html or "PMP 练习" in html
+    for frontend_path in ("/strategies", "/wrong", "/admin", "/practice"):
+        route_html = req(frontend_path)
+        assert "PMP 做题系统" in route_html or "PMP 练习" in route_html, frontend_path
 
     exams = req("/api/exams")
     assert len(exams) == 4, len(exams)
@@ -128,6 +131,7 @@ def main() -> None:
                 "wrong_before": len(wrong),
                 "wrong_after_learned": len(wrong_after),
                 "strategies": len(strategies),
+                "frontend_routes": "ok",
                 "attempt_correct": attempt["is_correct"],
                 "crud": "ok",
             },

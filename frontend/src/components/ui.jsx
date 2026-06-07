@@ -30,8 +30,9 @@ const buttonVariants = cva(
   },
 )
 
-export function Button({ variant, className, type = 'button', ...props }) {
-  return <button type={type} className={cn(buttonVariants({ variant }), className)} {...props} />
+export function Button({ as: Component = 'button', variant, className, type = 'button', ...props }) {
+  const componentProps = Component === 'button' ? { type } : {}
+  return <Component className={cn(buttonVariants({ variant }), className)} {...componentProps} {...props} />
 }
 
 export function Badge({ tone = 'neutral', className, children }) {

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import {
   AlertCircle,
   BookOpen,
@@ -16,7 +17,7 @@ import { FONT_OPTIONS } from '../constants'
 import { cn } from '../lib/utils'
 import { Button, SelectControl } from './ui'
 
-export function Sidebar({ view, setView, totals }) {
+export function Sidebar({ view, totals }) {
   return (
     <aside className="relative border-b border-white/25 bg-[radial-gradient(circle_at_30%_0%,rgba(138,112,77,0.06),transparent_34%),linear-gradient(180deg,rgba(251,250,247,0.64),rgba(245,241,234,0.48))] px-4 py-4 backdrop-blur-2xl after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-transparent after:via-ink-950/[0.07] after:to-transparent lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:px-5 lg:after:bottom-6 lg:after:left-auto lg:after:right-0 lg:after:top-6 lg:after:h-auto lg:after:w-px lg:after:bg-gradient-to-b">
       <div className="flex items-center gap-3">
@@ -30,22 +31,10 @@ export function Sidebar({ view, setView, totals }) {
       </div>
 
       <nav className="mt-5 grid grid-cols-4 gap-2 lg:grid-cols-1">
-        <Button variant={view === 'home' ? 'primary' : 'ghost'} className="justify-start" onClick={() => setView('home')}>
-          <BookOpen size={17} />
-          练习
-        </Button>
-        <Button variant={view === 'strategies' ? 'primary' : 'ghost'} className="justify-start" onClick={() => setView('strategies')}>
-          <Lightbulb size={17} />
-          思路
-        </Button>
-        <Button variant={view === 'wrong' ? 'primary' : 'ghost'} className="justify-start" onClick={() => setView('wrong')}>
-          <Target size={17} />
-          错题
-        </Button>
-        <Button variant={view === 'admin' ? 'primary' : 'ghost'} className="justify-start" onClick={() => setView('admin')}>
-          <Database size={17} />
-          题库
-        </Button>
+        <NavItem active={view === 'home'} to="/" icon={<BookOpen size={17} />} label="练习" />
+        <NavItem active={view === 'strategies'} to="/strategies" icon={<Lightbulb size={17} />} label="思路" />
+        <NavItem active={view === 'wrong'} to="/wrong" icon={<Target size={17} />} label="错题" />
+        <NavItem active={view === 'admin'} to="/admin" icon={<Database size={17} />} label="题库" />
       </nav>
 
       <div className="mt-5 grid grid-cols-3 gap-2 lg:grid-cols-1">
@@ -54,6 +43,15 @@ export function Sidebar({ view, setView, totals }) {
         <Metric label="记录" value={totals.attempts} icon={<ListChecks size={15} />} />
       </div>
     </aside>
+  )
+}
+
+function NavItem({ active, to, icon, label }) {
+  return (
+    <Button as={Link} to={to} variant={active ? 'primary' : 'ghost'} className="justify-start">
+      {icon}
+      {label}
+    </Button>
   )
 }
 

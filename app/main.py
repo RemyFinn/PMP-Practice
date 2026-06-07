@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .db import ROOT_DIR, init_db
@@ -29,4 +29,9 @@ def favicon() -> Response:
     return Response(status_code=204)
 
 
-app.mount("/", StaticFiles(directory=ROOT_DIR / "static", html=True), name="static")
+app.mount("/assets", StaticFiles(directory=ROOT_DIR / "static" / "assets"), name="assets")
+
+
+@app.get("/{path:path}", include_in_schema=False)
+def frontend_app(path: str = "") -> FileResponse:
+    return FileResponse(ROOT_DIR / "static" / "index.html")

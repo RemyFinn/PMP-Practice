@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from './api/client'
 import { EXAM_ORDER } from './constants'
 import { Notice, Sidebar, TopBar } from './components/layout'
@@ -9,8 +10,26 @@ import { StrategyView } from './views/StrategyView'
 import { WrongItemsView } from './views/WrongItemsView'
 import { AdminView } from './views/AdminView'
 
+const ROUTE_TO_VIEW = {
+  '/': 'home',
+  '/strategies': 'strategies',
+  '/wrong': 'wrong',
+  '/admin': 'admin',
+  '/practice': 'practice',
+}
+
+const VIEW_TO_ROUTE = {
+  home: '/',
+  strategies: '/strategies',
+  wrong: '/wrong',
+  admin: '/admin',
+  practice: '/practice',
+}
+
 export default function App() {
-  const [view, setView] = useState('home')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const view = ROUTE_TO_VIEW[location.pathname]
   const [exams, setExams] = useState([])
   const [questions, setQuestions] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -76,7 +95,7 @@ export default function App() {
       setSubmitted(new Map())
       setCurrentIndex(0)
       setMode(nextMode)
-      setView('practice')
+      navigate('/practice')
     })
   }
 
@@ -89,7 +108,7 @@ export default function App() {
     setSubmitted(new Map())
     setCurrentIndex(Math.max(0, Math.min(startIndex, nextQuestions.length - 1)))
     setMode(nextMode)
-    setView('practice')
+    navigate('/practice')
   }
 
   async function openQuestionFromStrategy(question) {
@@ -108,7 +127,7 @@ export default function App() {
         label: `${question.exam_code.toUpperCase()}-${question.number}`,
         backView: 'strategies',
       })
-      setView('practice')
+      navigate('/practice')
     })
   }
 
@@ -129,11 +148,12 @@ export default function App() {
     <div className="min-h-dvh bg-paper-50 text-ink-950">
       <a className="skip-link" href="#main">跳到主要内容</a>
       <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[236px_minmax(0,1fr)]">
-        <Sidebar view={view} setView={setView} totals={totals} />
+        <Sidebar view={view || 'home'} totals={totals} />
         <main id="main" className="min-w-0 px-4 py-4 sm:px-6 lg:px-8">
           <TopBar onRefresh={refreshEverything} loading={loading} fontMode={fontMode} setFontMode={setFontMode} />
           <AnimatePresence>{notice && <Notice notice={notice} onClose={() => setNotice(null)} />}</AnimatePresence>
           <AnimatePresence mode="wait">
+            {!view && <Navigate key="not-found" to="/" replace />}
             {view === 'home' && <HomeView key="home" exams={exams} totals={totals} onStart={startPractice} />}
             {view === 'strategies' && (
               <StrategyView
@@ -145,6 +165,7 @@ export default function App() {
                 onOpenQuestion={openQuestionFromStrategy}
               />
             )}
+            {view === 'practice' && !currentQuestion && <Navigate key="empty-practice" to="/" replace />}
             {view === 'practice' && currentQuestion && (
               <PracticeView
                 key="practice"
@@ -154,7 +175,7 @@ export default function App() {
                 mode={mode}
                 result={submitted.get(currentQuestion.id)}
                 submittedElapsed={submittedElapsed}
-                onBack={() => setView(mode?.backView || 'home')}
+                onBack={() => navigate(VIEW_TO_ROUTE[mode?.backView] || '/')}
                 onPrevious={() => setCurrentIndex((value) => Math.max(0, value - 1))}
                 onNext={() => setCurrentIndex((value) => Math.min(questions.length - 1, value + 1))}
                 onSubmit={async (selectedOptions, elapsedSeconds) => {
@@ -202,7 +223,7 @@ export default function App() {
                             )
                       setCurrentIndex((value) => Math.max(0, Math.min(value, next.length - 1)))
                       if (mode?.type === 'wrong' && next.length === 0) {
-                        setView(mode?.backView || 'home')
+                        navigate(VIEW_TO_ROUTE[mode?.backView] || '/')
                         setNotice({ type: 'success', text: '错题集已清空。' })
                       }
                       return next
