@@ -2,6 +2,16 @@
 
 FastAPI + React + PostgreSQL 的 PMP 刷题系统。支持四套模拟题、混合练习、错题集、思路总结、计时、题库管理和多用户独立错题记录。
 
+## Wiki
+
+项目 Wiki 文档位于：
+
+```text
+docs/wiki/Home.md
+```
+
+包含本地运行、阿里云 1Panel 部署、旧数据迁移、用户权限、运维排障和架构说明。
+
 ## 本地启动
 
 推荐本地也使用 Docker PostgreSQL，保证和阿里云部署一致。
