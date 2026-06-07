@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: pmp-postgres
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pmp_practice}
@@ -16,6 +17,7 @@ services:
       retries: 5
 
   web:
+    container_name: pmp-web
     build: .
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-pmp}:${POSTGRES_PASSWORD:-pmp_password}@postgres:5432/${POSTGRES_DB:-pmp_practice}
