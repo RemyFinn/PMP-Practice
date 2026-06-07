@@ -203,10 +203,12 @@ def list_strategies(exam: str | None = None, search: str | None = None) -> list[
             strategy = StrategyOut(**dict(row))
             qrows = conn.execute(
                 """
-                SELECT q.id, e.code AS exam_code, q.number, q.stem
+                SELECT q.id, e.code AS exam_code, q.number, q.stem,
+                       COALESCE(w.active, 0) AS is_wrong_active
                 FROM strategy_question_links l
                 JOIN questions q ON q.id = l.question_id AND q.deleted_at IS NULL
                 JOIN exams e ON e.id = q.exam_id
+                LEFT JOIN wrong_items w ON w.question_id = q.id
                 WHERE l.strategy_id = ?
                 ORDER BY CASE e.code
                     WHEN 'sim7' THEN 1

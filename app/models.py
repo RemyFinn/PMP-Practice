@@ -44,6 +44,7 @@ class StrategyQuestionOut(BaseModel):
     exam_code: str
     number: int
     stem: str
+    is_wrong_active: bool = False
 
 
 class StrategyOut(BaseModel):

@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, Search, X } from 'lucide-react'
+import { ArrowRight, Columns2, Columns3, Columns4, List, Search, X } from 'lucide-react'
 import { api } from '../api/client'
 import { EXAM_LABELS } from '../constants'
 import { QuestionCard } from '../components/question-card'
 import { StrategyText } from '../components/strategy-text'
 import { Badge, Button, Screen, SelectControl, TextField, inputClass, panelClass } from '../components/ui'
+import { cn } from '../lib/utils'
 
 export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }) {
   const [strategies, setStrategies] = useState([])
   const [examFilter, setExamFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [layoutMode, setLayoutMode] = useState(() => normalizeLayoutMode(localStorage.getItem('pmp-strategy-layout')))
   const [previewQuestion, setPreviewQuestion] = useState(null)
   const [previewResult, setPreviewResult] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -27,6 +29,10 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   useEffect(() => {
     loadStrategies().catch((error) => notify({ type: 'error', text: error.message }))
   }, [examFilter])
+
+  useEffect(() => {
+    localStorage.setItem('pmp-strategy-layout', layoutMode)
+  }, [layoutMode])
 
   useEffect(() => {
     if (!previewQuestion) return undefined
@@ -93,6 +99,8 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
     return Array.from(map.values())
   }, [strategies])
 
+  const isSingleColumn = layoutMode === '1'
+
   return (
     <Screen>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -100,7 +108,34 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
           <h2 className="text-2xl font-semibold tracking-tight">思路总结</h2>
           <p className="mt-1 text-sm text-ink-400">按解题思路查看题目，点击题号练习。</p>
         </div>
-        <Badge tone="blue">{strategies.length} 条思路</Badge>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex h-9 rounded-md bg-ink-950/[0.045] p-1">
+            {[
+              { value: '1', label: '列表', icon: List },
+              { value: '2', label: '两列', icon: Columns2 },
+              { value: '3', label: '三列', icon: Columns3 },
+              { value: '4', label: '四列', icon: Columns4 },
+            ].map((item) => {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded px-2.5 text-xs font-semibold leading-none transition',
+                    layoutMode === item.value ? 'bg-white text-ink-950 shadow-hairline' : 'text-ink-500 hover:text-ink-950',
+                  )}
+                  onClick={() => setLayoutMode(item.value)}
+                  aria-pressed={layoutMode === item.value}
+                >
+                  <Icon size={14} />
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+          <Badge tone="blue">{strategies.length} 条思路</Badge>
+        </div>
       </div>
 
       <section className={panelClass('p-4')}>
@@ -137,9 +172,24 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
               <Badge tone="blue">{EXAM_LABELS[group.exam_code] || group.exam_code.toUpperCase()}</Badge>
               <Badge>{group.category}</Badge>
             </div>
-            <div className="divide-y divide-ink-950/[0.035]">
+            <div
+              className={cn(
+                isSingleColumn && 'divide-y divide-ink-950/[0.035]',
+                layoutMode === '2' && 'grid gap-2 lg:grid-cols-2',
+                layoutMode === '3' && 'grid gap-2 xl:grid-cols-3',
+                layoutMode === '4' && 'grid gap-2 xl:grid-cols-3 2xl:grid-cols-4',
+              )}
+            >
               {group.items.map((strategy) => (
-                <div key={strategy.id} className="grid gap-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                <div
+                  key={strategy.id}
+                  className={cn(
+                    'min-w-0',
+                    !isSingleColumn
+                      ? 'grid gap-3 rounded-lg bg-ink-950/[0.018] p-3 transition hover:bg-ink-950/[0.028]'
+                      : 'grid gap-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start',
+                  )}
+                >
                   <div className="min-w-0">
                     <h3 className="text-[15px] leading-6">
                       <StrategyText text={strategy.title} />
@@ -149,8 +199,13 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                         <button
                           key={question.id}
                           type="button"
-                          className="inline-flex h-7 items-center rounded-md bg-ink-950/[0.045] px-2 font-latin text-xs font-semibold leading-none tabular-nums text-ink-700 transition hover:bg-ink-950 hover:text-paper-50"
-                          title={question.stem}
+                          className={cn(
+                            'inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
+                            question.is_wrong_active
+                              ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
+                              : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
+                          )}
+                          title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
                           onClick={() => openQuestionPreview(question)}
                         >
                           {question.number}
@@ -159,7 +214,11 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                     </div>
                   </div>
                   {strategy.questions[0] && (
-                    <Button variant="ghost" onClick={() => openQuestionPreview(strategy.questions[0])}>
+                    <Button
+                      variant="ghost"
+                      className={cn(!isSingleColumn ? 'justify-self-start' : 'lg:justify-self-end')}
+                      onClick={() => openQuestionPreview(strategy.questions[0])}
+                    >
                       <ArrowRight size={16} />
                       练习
                     </Button>
@@ -243,4 +302,10 @@ function QuestionPreviewDialog({ question, result, loading, onSubmit, onClose, o
       )}
     </AnimatePresence>
   )
+}
+
+function normalizeLayoutMode(value) {
+  if (value === 'list') return '1'
+  if (value === 'grid') return '2'
+  return ['1', '2', '3', '4'].includes(value) ? value : '1'
 }
