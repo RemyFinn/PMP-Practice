@@ -47,9 +47,8 @@ def user_out(row: dict) -> UserOut:
     )
 
 
-def fetch_question(conn, question_id: int, user_id: int) -> dict:
-    row = conn.execute(
-        """
+def question_with_user_stats_sql() -> str:
+    return """
         SELECT q.*, e.code AS exam_code, e.title AS exam_title,
                COALESCE(w.active, 0) AS is_wrong_active,
                GREATEST(0, COALESCE(s.raw_wrong_count, 0) + COALESCE(w.wrong_count_delta, 0)) AS wrong_count,
@@ -67,8 +66,22 @@ def fetch_question(conn, question_id: int, user_id: int) -> dict:
             WHERE user_id = %s
             GROUP BY question_id
         ) s ON s.question_id = q.id
-        WHERE q.id = %s AND q.deleted_at IS NULL
-        """,
+    """
+
+
+def question_query_sql(where: list[str], order_by: str | None = None) -> str:
+    sql = f"""
+        {question_with_user_stats_sql()}
+        WHERE {" AND ".join(where)}
+    """
+    if order_by:
+        sql += f" ORDER BY {order_by}"
+    return sql
+
+
+def fetch_question(conn, question_id: int, user_id: int) -> dict:
+    row = conn.execute(
+        question_query_sql(["q.id = %s", "q.deleted_at IS NULL"]),
         (user_id, user_id, question_id),
     ).fetchone()
     if row is None:
@@ -293,27 +306,7 @@ def list_questions(
     else:
         order_by = "e.code, q.number"
 
-    sql = f"""
-        SELECT q.*, e.code AS exam_code, e.title AS exam_title,
-               COALESCE(w.active, 0) AS is_wrong_active,
-               GREATEST(0, COALESCE(s.raw_wrong_count, 0) + COALESCE(w.wrong_count_delta, 0)) AS wrong_count,
-               GREATEST(0, COALESCE(s.attempt_count, 0) + COALESCE(w.attempt_count_delta, 0)) AS attempt_count,
-               s.last_wrong_at AS last_wrong_at
-        FROM questions q
-        JOIN exams e ON e.id = q.exam_id
-        LEFT JOIN wrong_items w ON w.question_id = q.id AND w.user_id = %s
-        LEFT JOIN (
-            SELECT question_id,
-                   COUNT(*) AS attempt_count,
-                   SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) AS raw_wrong_count,
-                   MAX(CASE WHEN is_correct = 0 THEN created_at ELSE NULL END) AS last_wrong_at
-            FROM attempts
-            WHERE user_id = %s
-            GROUP BY question_id
-        ) s ON s.question_id = q.id
-        WHERE {" AND ".join(where)}
-        ORDER BY {order_by}
-    """
+    sql = question_query_sql(where, order_by)
 
     with transaction() as conn:
         rows = conn.execute(sql, params).fetchall()
