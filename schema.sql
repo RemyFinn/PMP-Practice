@@ -63,7 +63,32 @@ CREATE TABLE IF NOT EXISTS wrong_items (
     FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS strategies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exam_code TEXT NOT NULL,
+    category TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    source_file TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (exam_code, category, title)
+);
+
+CREATE TABLE IF NOT EXISTS strategy_question_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    strategy_id INTEGER NOT NULL,
+    question_id INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (strategy_id) REFERENCES strategies(id) ON DELETE CASCADE,
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+    UNIQUE (strategy_id, question_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_questions_exam_number ON questions (exam_id, number);
 CREATE INDEX IF NOT EXISTS idx_questions_deleted ON questions (deleted_at);
 CREATE INDEX IF NOT EXISTS idx_attempts_question ON attempts (question_id);
 CREATE INDEX IF NOT EXISTS idx_wrong_items_active ON wrong_items (active);
+CREATE INDEX IF NOT EXISTS idx_strategies_exam ON strategies (exam_code, sort_order);
+CREATE INDEX IF NOT EXISTS idx_strategy_links_question ON strategy_question_links (question_id);

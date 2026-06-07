@@ -8,10 +8,11 @@
 cd /Users/remy/Desktop/PMP学习/pmp-practice-system
 python -m venv .venv
 source .venv/bin/activate
-pip install fastapi uvicorn openpyxl
+pip install fastapi uvicorn openpyxl pypdf pdfplumber
 npm install
 npm run build
 python -m app.import_data
+python scripts/import_strategies.py
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
@@ -33,5 +34,11 @@ http://localhost:8000
 - `/Users/remy/Desktop/PMP学习/PMP模拟八_阅卷结果.xlsx`
 - `/Users/remy/Desktop/PMP学习/PMP模拟九_阅卷结果.xlsx`
 - `/Users/remy/Desktop/PMP学习/PMP模拟十_阅卷结果.xlsx`
+
+思路总结导入脚本默认读取：
+
+- `/Users/remy/Library/Mobile Documents/com~apple~CloudDocs/Book/PMP/PMP模拟七主要解题思路总结.pdf`
+- `/Users/remy/Library/Mobile Documents/com~apple~CloudDocs/Book/PMP/PMP模拟八主要解题思路总结.pdf`
+- `/Users/remy/Library/Mobile Documents/com~apple~CloudDocs/Book/PMP/模拟九-模拟十题目分类.pdf`
 
 SQLite 数据库位于 `data/pmp.sqlite`。

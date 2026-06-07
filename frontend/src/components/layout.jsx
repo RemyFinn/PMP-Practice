@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Database,
   GraduationCap,
+  Lightbulb,
   Layers3,
   ListChecks,
   RefreshCw,
@@ -28,10 +29,14 @@ export function Sidebar({ view, setView, totals }) {
         </div>
       </div>
 
-      <nav className="mt-5 grid grid-cols-3 gap-2 lg:grid-cols-1">
+      <nav className="mt-5 grid grid-cols-4 gap-2 lg:grid-cols-1">
         <Button variant={view === 'home' ? 'primary' : 'ghost'} className="justify-start" onClick={() => setView('home')}>
           <BookOpen size={17} />
           练习
+        </Button>
+        <Button variant={view === 'strategies' ? 'primary' : 'ghost'} className="justify-start" onClick={() => setView('strategies')}>
+          <Lightbulb size={17} />
+          思路
         </Button>
         <Button variant={view === 'wrong' ? 'primary' : 'ghost'} className="justify-start" onClick={() => setView('wrong')}>
           <Target size={17} />

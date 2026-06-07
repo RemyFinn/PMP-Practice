@@ -11,6 +11,14 @@ class OptionOut(BaseModel):
     text: str
 
 
+class StrategyLinkOut(BaseModel):
+    id: int
+    exam_code: str
+    category: str
+    title: str
+    summary: str = ""
+
+
 class QuestionOut(BaseModel):
     id: int
     exam_code: str
@@ -27,7 +35,26 @@ class QuestionOut(BaseModel):
     wrong_count: int = 0
     attempt_count: int = 0
     last_wrong_at: str | None = None
+    strategies: list[StrategyLinkOut] = Field(default_factory=list)
     options: list[OptionOut]
+
+
+class StrategyQuestionOut(BaseModel):
+    id: int
+    exam_code: str
+    number: int
+    stem: str
+
+
+class StrategyOut(BaseModel):
+    id: int
+    exam_code: str
+    category: str
+    title: str
+    summary: str = ""
+    source_file: str = ""
+    sort_order: int = 0
+    questions: list[StrategyQuestionOut] = Field(default_factory=list)
 
 
 class ExamOut(BaseModel):

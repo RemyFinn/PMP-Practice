@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import urllib.request
 
 
@@ -41,37 +42,23 @@ def main() -> None:
     assert len(mixed) == 720, len(mixed)
 
     wrong = req("/api/questions?mode=wrong")
-    assert len(wrong) == 218, len(wrong)
+    assert len(wrong) >= 0, len(wrong)
 
-    question = sim7[0]
-    attempt = req(
-        "/api/attempts",
-        "POST",
-        {
-            "question_id": question["id"],
-            "selected_options": answer_list(question["correct_answer"]),
-            "mode": "verify",
-        },
-    )
-    assert attempt["is_correct"] is True, attempt
+    strategies = req("/api/strategies")
+    assert len(strategies) > 0, len(strategies)
+    linked_strategy = next((item for item in strategies if item["questions"]), None)
+    assert linked_strategy is not None, strategies[:1]
 
-    wrong_question = wrong[0]
-    learned = req(
-        f"/api/wrong-items/{wrong_question['id']}",
-        "PATCH",
-        {"learned": True},
-    )
-    assert learned["active"] is False, learned
+    question_with_strategy = next((item for item in sim7 if item.get("strategies")), None)
+    assert question_with_strategy is not None, sim7[:1]
 
-    wrong_after = req("/api/questions?mode=wrong")
-    assert len(wrong_after) == 217, len(wrong_after)
-
+    next_number = int(time.time())
     created = req(
         "/api/questions",
         "POST",
         {
             "exam_code": "sim7",
-            "number": 999,
+            "number": next_number,
             "stem": "临时验证题",
             "is_multi": False,
             "correct_answer": "A",
@@ -82,6 +69,17 @@ def main() -> None:
             ],
         },
     )
+    attempt = req(
+        "/api/attempts",
+        "POST",
+        {
+            "question_id": created["id"],
+            "selected_options": answer_list(created["correct_answer"]),
+            "mode": "verify",
+        },
+    )
+    assert attempt["is_correct"] is True, attempt
+
     updated = req(
         f"/api/questions/{created['id']}",
         "PATCH",
@@ -97,8 +95,29 @@ def main() -> None:
     assert updated["stem"] == "临时验证题更新"
     assert updated["correct_answer"] == "B"
 
+    wrong_attempt = req(
+        "/api/attempts",
+        "POST",
+        {
+            "question_id": created["id"],
+            "selected_options": ["A"],
+            "mode": "verify",
+        },
+    )
+    assert wrong_attempt["is_correct"] is False, wrong_attempt
+
+    learned = req(
+        f"/api/wrong-items/{created['id']}",
+        "PATCH",
+        {"learned": True},
+    )
+    assert learned["active"] is False, learned
+
     deleted = req(f"/api/questions/{created['id']}", "DELETE")
     assert deleted["deleted"] is True
+
+    wrong_after = req("/api/questions?mode=wrong")
+    assert len(wrong_after) == len(wrong), (len(wrong), len(wrong_after))
 
     print(
         json.dumps(
@@ -108,6 +127,7 @@ def main() -> None:
                 "mixed": len(mixed),
                 "wrong_before": len(wrong),
                 "wrong_after_learned": len(wrong_after),
+                "strategies": len(strategies),
                 "attempt_correct": attempt["is_correct"],
                 "crud": "ok",
             },

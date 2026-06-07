@@ -11,6 +11,9 @@ from .models import (
     QuestionCreate,
     QuestionOut,
     QuestionUpdate,
+    StrategyLinkOut,
+    StrategyOut,
+    StrategyQuestionOut,
     WrongCountPatch,
     WrongItemPatch,
 )
@@ -58,6 +61,20 @@ def fetch_options(conn, question_id: int) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def fetch_question_strategies(conn, question_id: int) -> list[StrategyLinkOut]:
+    rows = conn.execute(
+        """
+        SELECT s.id, s.exam_code, s.category, s.title, s.summary
+        FROM strategies s
+        JOIN strategy_question_links l ON l.strategy_id = s.id
+        WHERE l.question_id = ?
+        ORDER BY s.sort_order, s.category, s.id
+        """,
+        (question_id,),
+    ).fetchall()
+    return [StrategyLinkOut(**dict(row)) for row in rows]
+
+
 def build_question(conn, row: dict) -> QuestionOut:
     return QuestionOut(
         id=row["id"],
@@ -75,6 +92,7 @@ def build_question(conn, row: dict) -> QuestionOut:
         wrong_count=int(row.get("wrong_count") or 0),
         attempt_count=int(row.get("attempt_count") or 0),
         last_wrong_at=row.get("last_wrong_at"),
+        strategies=fetch_question_strategies(conn, row["id"]),
         options=fetch_options(conn, row["id"]),
     )
 
@@ -149,6 +167,66 @@ def list_questions(
     with transaction() as conn:
         rows = conn.execute(sql, params).fetchall()
         return [build_question(conn, dict(row)) for row in rows]
+
+
+@router.get("/strategies", response_model=list[StrategyOut])
+def list_strategies(exam: str | None = None, search: str | None = None) -> list[StrategyOut]:
+    where: list[str] = []
+    params: list[object] = []
+    if exam:
+        where.append("s.exam_code = ?")
+        params.append(exam)
+    if search:
+        where.append("(s.category LIKE ? OR s.title LIKE ? OR s.summary LIKE ?)")
+        like = f"%{search}%"
+        params.extend([like, like, like])
+    sql = """
+        SELECT s.id, s.exam_code, s.category, s.title, s.summary, s.source_file, s.sort_order
+        FROM strategies s
+    """
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += """
+        ORDER BY CASE s.exam_code
+            WHEN 'sim7' THEN 1
+            WHEN 'sim8' THEN 2
+            WHEN 'sim9' THEN 3
+            WHEN 'sim10' THEN 4
+            ELSE 99
+        END, s.sort_order, s.category, s.id
+    """
+
+    with transaction() as conn:
+        rows = conn.execute(sql, params).fetchall()
+        result: list[StrategyOut] = []
+        for row in rows:
+            strategy = StrategyOut(**dict(row))
+            qrows = conn.execute(
+                """
+                SELECT q.id, e.code AS exam_code, q.number, q.stem
+                FROM strategy_question_links l
+                JOIN questions q ON q.id = l.question_id AND q.deleted_at IS NULL
+                JOIN exams e ON e.id = q.exam_id
+                WHERE l.strategy_id = ?
+                ORDER BY CASE e.code
+                    WHEN 'sim7' THEN 1
+                    WHEN 'sim8' THEN 2
+                    WHEN 'sim9' THEN 3
+                    WHEN 'sim10' THEN 4
+                    ELSE 99
+                END, q.number
+                """,
+                (strategy.id,),
+            ).fetchall()
+            strategy.questions = [StrategyQuestionOut(**dict(qrow)) for qrow in qrows]
+            result.append(strategy)
+        return result
+
+
+@router.get("/questions/{question_id}", response_model=QuestionOut)
+def get_question(question_id: int) -> QuestionOut:
+    with transaction() as conn:
+        return build_question(conn, fetch_question(conn, question_id))
 
 
 @router.post("/attempts", response_model=AttemptOut)

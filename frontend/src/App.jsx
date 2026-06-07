@@ -5,6 +5,7 @@ import { EXAM_ORDER } from './constants'
 import { Notice, Sidebar, TopBar } from './components/layout'
 import { HomeView } from './views/HomeView'
 import { PracticeView } from './views/PracticeView'
+import { StrategyView } from './views/StrategyView'
 import { WrongItemsView } from './views/WrongItemsView'
 import { AdminView } from './views/AdminView'
 
@@ -91,6 +92,26 @@ export default function App() {
     setView('practice')
   }
 
+  async function openQuestionFromStrategy(question) {
+    await run(async () => {
+      const data = await api(`/api/questions?mode=exam&exam=${encodeURIComponent(question.exam_code)}`)
+      const targetIndex = data.findIndex((item) => item.id === question.id)
+      if (targetIndex < 0) {
+        setNotice({ type: 'error', text: '没有找到对应题目。' })
+        return
+      }
+      setQuestions(data)
+      setSubmitted(new Map())
+      setCurrentIndex(targetIndex)
+      setMode({
+        type: 'strategy',
+        label: `${question.exam_code.toUpperCase()}-${question.number}`,
+        backView: 'strategies',
+      })
+      setView('practice')
+    })
+  }
+
   async function refreshEverything() {
     await run(loadExams, '统计已刷新')
   }
@@ -114,6 +135,16 @@ export default function App() {
           <AnimatePresence>{notice && <Notice notice={notice} onClose={() => setNotice(null)} />}</AnimatePresence>
           <AnimatePresence mode="wait">
             {view === 'home' && <HomeView key="home" exams={exams} totals={totals} onStart={startPractice} />}
+            {view === 'strategies' && (
+              <StrategyView
+                key="strategies"
+                exams={exams}
+                notify={setNotice}
+                run={run}
+                reloadExams={loadExams}
+                onOpenQuestion={openQuestionFromStrategy}
+              />
+            )}
             {view === 'practice' && currentQuestion && (
               <PracticeView
                 key="practice"
