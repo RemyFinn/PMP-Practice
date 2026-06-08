@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from './api/client'
 import { EXAM_ORDER } from './constants'
-import { Notice, Sidebar, TopBar } from './components/layout'
+import { NoticeViewport, Sidebar, TopBar } from './components/layout'
 import { HomeView } from './views/HomeView'
 import { PracticeView } from './views/PracticeView'
 import { StrategyView } from './views/StrategyView'
@@ -191,11 +191,7 @@ export default function App() {
           }}
           notify={setNotice}
         />
-        <div className="pointer-events-none fixed left-0 right-0 top-4 z-50 px-4">
-          <div className="pointer-events-auto">
-            <AnimatePresence>{notice && <Notice notice={notice} onClose={() => setNotice(null)} />}</AnimatePresence>
-          </div>
-        </div>
+        <NoticeViewport notice={notice} onClose={() => setNotice(null)} />
       </div>
     )
   }
@@ -207,7 +203,7 @@ export default function App() {
         <Sidebar view={view || 'home'} totals={totals} user={user} onLogout={logout} />
         <main id="main" className="min-w-0 px-4 py-4 sm:px-6 lg:px-8">
           <TopBar onRefresh={refreshEverything} loading={loading} fontMode={fontMode} setFontMode={setFontMode} />
-          <AnimatePresence>{notice && <Notice notice={notice} onClose={() => setNotice(null)} />}</AnimatePresence>
+          <NoticeViewport notice={notice} onClose={() => setNotice(null)} insetSidebar />
           <AnimatePresence mode="wait">
             {!view && <Navigate key="not-found" to="/" replace />}
             {view === 'admin' && user.role !== 'admin' && <Navigate key="admin-denied" to="/" replace />}

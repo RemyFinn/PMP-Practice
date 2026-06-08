@@ -121,7 +121,7 @@ Issue-Class: public-contract
 
 - API client 总是发送 `Content-Type: application/json` 和 `credentials: include`。
 - 登录状态通过 `/api/auth/me` 初始化。
-- 当前练习队列、当前题索引、已提交结果、通知等只存在 React 内存状态。
+- 当前练习队列、当前题索引、已提交结果、通知等只存在 React 内存状态；通知以固定定位悬浮提示展示，不占用页面文档流位置，并会在短暂停留后自动消失。
 - 刷新页面会丢失当前练习上下文。
 - 字体模式保存在 `localStorage.pmp-font-mode`。
 - 策略布局保存在 `localStorage.pmp-strategy-layout`。

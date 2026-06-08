@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'
+import { useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   AlertCircle,
@@ -106,12 +107,32 @@ export function TopBar({ onRefresh, loading, fontMode, setFontMode }) {
   )
 }
 
+export function NoticeViewport({ notice, onClose, insetSidebar = false }) {
+  useEffect(() => {
+    if (!notice) return undefined
+    const timeoutMs = notice.type === 'error' ? 5200 : 3200
+    const timer = window.setTimeout(onClose, timeoutMs)
+    return () => window.clearTimeout(timer)
+  }, [notice, onClose])
+
+  return (
+    <div
+      className={cn(
+        'pointer-events-none fixed left-0 right-0 top-4 z-50 px-4',
+        insetSidebar && 'lg:left-[236px]',
+      )}
+    >
+      <AnimatePresence>{notice && <Notice notice={notice} onClose={onClose} />}</AnimatePresence>
+    </div>
+  )
+}
+
 export function Notice({ notice, onClose }) {
   const Icon = notice.type === 'error' ? AlertCircle : CheckCircle2
   return (
     <motion.div
       className={cn(
-        'mx-auto mb-4 flex max-w-6xl items-center gap-2 rounded-lg border px-3 py-2 text-sm shadow-quiet',
+        'pointer-events-auto mx-auto flex w-full max-w-sm items-center gap-2 rounded-lg border px-3 py-2 text-sm shadow-quiet sm:max-w-md',
         notice.type === 'error'
           ? 'border-[#b36a5c]/[0.12] bg-[#f5e7e3] text-[#7f3e36]'
           : 'border-[#708b68]/[0.12] bg-[#edf4e8] text-[#496a45]',
