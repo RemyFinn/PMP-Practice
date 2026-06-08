@@ -181,7 +181,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
       </div>
 
       <section className={panelClass('p-4')}>
-        <div className="grid gap-3 lg:grid-cols-[minmax(260px,0.9fr)_minmax(0,1fr)_auto] lg:items-end">
+        <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-end">
           <ExamFilterControl exams={exams} value={examFilters} onChange={setExamFilters} />
           <TextField label="搜索">
             <div className="relative">
