@@ -294,10 +294,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                             {examGroup.questions.map((question) => (
                               <span
                                 key={question.id}
-                                className={cn(
-                                  'inline-flex h-7 overflow-hidden rounded-md',
-                                  question.is_wrong_active && 'ring-1 ring-[#8e4940]/20 shadow-[0_0_0_3px_rgba(142,73,64,0.055)]',
-                                )}
+                                className="inline-flex h-7 overflow-hidden rounded-md"
                               >
                                 <button
                                   type="button"
