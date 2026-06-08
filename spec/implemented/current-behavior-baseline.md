@@ -125,6 +125,7 @@ Issue-Class: public-contract
 - 刷新页面会丢失当前练习上下文。
 - 字体模式保存在 `localStorage.pmp-font-mode`。
 - 策略布局保存在 `localStorage.pmp-strategy-layout`。
+- 思路页套卷筛选是 React 内存态多选；选择多个套卷时，思路按分类分组，并在每条思路上展示所属套卷。
 - 思路页打开题目预览弹层时，底层页面滚动被锁定；弹层内部题目区域仍可独立滚动。
 - 练习计时基于浏览器 `Date.now()` 和 `window.setInterval()`。
 - 单选题点击选项会立即提交；多选题需要点击提交按钮。

@@ -5,12 +5,12 @@ import { api } from '../api/client'
 import { EXAM_LABELS } from '../constants'
 import { QuestionCard } from '../components/question-card'
 import { StrategyText } from '../components/strategy-text'
-import { Badge, Button, Screen, SelectControl, TextField, inputClass, panelClass } from '../components/ui'
+import { Badge, Button, CheckboxControl, Screen, TextField, inputClass, panelClass } from '../components/ui'
 import { cn } from '../lib/utils'
 
 export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }) {
   const [strategies, setStrategies] = useState([])
-  const [examFilter, setExamFilter] = useState('all')
+  const [examFilters, setExamFilters] = useState([])
   const [search, setSearch] = useState('')
   const [layoutMode, setLayoutMode] = useState(() => normalizeLayoutMode(localStorage.getItem('pmp-strategy-layout')))
   const [previewQuestion, setPreviewQuestion] = useState(null)
@@ -20,15 +20,20 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   async function loadStrategies() {
     let path = '/api/strategies'
     const params = []
-    if (examFilter !== 'all') params.push(`exam=${encodeURIComponent(examFilter)}`)
+    if (examFilters.length === 1) params.push(`exam=${encodeURIComponent(examFilters[0])}`)
     if (search.trim()) params.push(`search=${encodeURIComponent(search.trim())}`)
     if (params.length) path += `?${params.join('&')}`
-    setStrategies(await api(path))
+    const data = await api(path)
+    setStrategies(
+      examFilters.length > 1
+        ? data.filter((strategy) => examFilters.includes(strategy.exam_code))
+        : data,
+    )
   }
 
   useEffect(() => {
     loadStrategies().catch((error) => notify({ type: 'error', text: error.message }))
-  }, [examFilter])
+  }, [examFilters])
 
   useEffect(() => {
     localStorage.setItem('pmp-strategy-layout', layoutMode)
@@ -91,13 +96,20 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
 
   const grouped = useMemo(() => {
     const map = new Map()
+    const groupByCategory = examFilters.length > 1
     for (const strategy of strategies) {
-      const key = `${strategy.exam_code}-${strategy.category}`
-      if (!map.has(key)) map.set(key, { exam_code: strategy.exam_code, category: strategy.category, items: [] })
+      const key = groupByCategory ? strategy.category : `${strategy.exam_code}-${strategy.category}`
+      if (!map.has(key)) {
+        map.set(key, {
+          exam_code: groupByCategory ? null : strategy.exam_code,
+          category: strategy.category,
+          items: [],
+        })
+      }
       map.get(key).items.push(strategy)
     }
     return Array.from(map.values())
-  }, [strategies])
+  }, [examFilters.length, strategies])
 
   const isSingleColumn = layoutMode === '1'
 
@@ -139,15 +151,8 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
       </div>
 
       <section className={panelClass('p-4')}>
-        <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-end">
-          <TextField label="套卷">
-            <SelectControl
-              value={examFilter}
-              onValueChange={setExamFilter}
-              options={[{ value: 'all', label: '全部套卷' }, ...exams.map((exam) => ({ value: exam.code, label: exam.title }))]}
-              ariaLabel="筛选思路套卷"
-            />
-          </TextField>
+        <div className="grid gap-3 lg:grid-cols-[minmax(260px,0.9fr)_minmax(0,1fr)_auto] lg:items-end">
+          <ExamFilterControl exams={exams} value={examFilters} onChange={setExamFilters} />
           <TextField label="搜索">
             <div className="relative">
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
@@ -169,7 +174,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
         {grouped.map((group) => (
           <section key={`${group.exam_code}-${group.category}`} className={panelClass('p-4')}>
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Badge tone="blue">{EXAM_LABELS[group.exam_code] || group.exam_code.toUpperCase()}</Badge>
+              {group.exam_code && <Badge tone="blue">{EXAM_LABELS[group.exam_code] || group.exam_code.toUpperCase()}</Badge>}
               <Badge>{group.category}</Badge>
             </div>
             <div
@@ -191,8 +196,15 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                   )}
                 >
                   <div className="min-w-0">
-                    <h3 className="text-[15px] leading-6">
-                      <StrategyText text={strategy.title} />
+                    <h3 className="flex flex-wrap items-start gap-2 text-[15px] leading-6">
+                      {!group.exam_code && (
+                        <Badge tone="blue" className="mt-0.5 h-6">
+                          {EXAM_LABELS[strategy.exam_code] || strategy.exam_code.toUpperCase()}
+                        </Badge>
+                      )}
+                      <span className="min-w-0">
+                        <StrategyText text={strategy.title} />
+                      </span>
                     </h3>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {strategy.questions.map((question) => (
@@ -249,6 +261,42 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
         }}
       />
     </Screen>
+  )
+}
+
+function ExamFilterControl({ exams, value, onChange }) {
+  const selected = new Set(value)
+
+  function toggleExam(code) {
+    const next = selected.has(code)
+      ? value.filter((item) => item !== code)
+      : [...value, code]
+    onChange(next)
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-ink-700">
+      <div>套卷</div>
+      <div className="flex min-h-11 flex-wrap items-center gap-2">
+        <Button
+          variant={value.length === 0 ? 'primary' : 'secondary'}
+          className="min-h-9 px-3 text-xs"
+          onClick={() => onChange([])}
+        >
+          全部套卷
+        </Button>
+        {exams.map((exam) => (
+          <CheckboxControl
+            key={exam.code}
+            checked={selected.has(exam.code)}
+            onCheckedChange={() => toggleExam(exam.code)}
+            className="min-h-9 self-auto px-2.5 text-xs"
+          >
+            {exam.title}
+          </CheckboxControl>
+        ))}
+      </div>
+    </div>
   )
 }
 

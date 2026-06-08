@@ -37,6 +37,7 @@
 | 状态 | Spec | 说明 |
 |---|---|---|
 | implemented | [current-behavior-baseline](./implemented/current-behavior-baseline.md) | 当前系统行为基线，来自代码只读梳理和特征测试 |
+| implemented | [strategy-multi-exam-filter](./implemented/strategy-multi-exam-filter.md) | 思路页支持多套卷筛选，并在多选时按分类合并展示 |
 
 ## Spec 模板
 
