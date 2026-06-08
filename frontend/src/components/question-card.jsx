@@ -15,6 +15,7 @@ export function QuestionCard({
   className,
   variant = 'page',
   resultKey,
+  onStrategiesVisibleChange,
 }) {
   const [selected, setSelected] = useState([])
   const [showStrategies, setShowStrategies] = useState(false)
@@ -23,6 +24,7 @@ export function QuestionCard({
   useEffect(() => {
     setSelected(result ? letters(result.selected_answer) : [])
     setShowStrategies(false)
+    onStrategiesVisibleChange?.(false)
   }, [question.id, result])
 
   async function submit(nextSelected = selected) {
@@ -59,7 +61,13 @@ export function QuestionCard({
         <QuestionMeta
           question={question}
           showStrategies={showStrategies}
-          onToggleStrategies={() => setShowStrategies((value) => !value)}
+          onToggleStrategies={() =>
+            setShowStrategies((value) => {
+              const next = !value
+              onStrategiesVisibleChange?.(next)
+              return next
+            })
+          }
         />
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, Check, ChevronDown, Columns2, Columns3, Columns4, List, Search, X } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, ChevronDown, Columns2, Columns3, Columns4, List, Search, X } from 'lucide-react'
 import { api } from '../api/client'
 import { EXAM_LABELS } from '../constants'
 import { QuestionCard } from '../components/question-card'
@@ -13,11 +13,10 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   const [examFilters, setExamFilters] = useState([])
   const [search, setSearch] = useState('')
   const [layoutMode, setLayoutMode] = useState(() => normalizeLayoutMode(localStorage.getItem('pmp-strategy-layout')))
-  const [activeStrategyId, setActiveStrategyId] = useState(null)
-  const [activeQuestionId, setActiveQuestionId] = useState(null)
   const [previewQuestion, setPreviewQuestion] = useState(null)
   const [previewResult, setPreviewResult] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewStrategiesVisible, setPreviewStrategiesVisible] = useState(false)
 
   async function loadStrategies() {
     let path = '/api/strategies'
@@ -53,11 +52,13 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   function closePreview() {
     setPreviewQuestion(null)
     setPreviewResult(null)
+    setPreviewStrategiesVisible(false)
   }
 
   async function openQuestionPreview(question) {
     setPreviewLoading(true)
     setPreviewResult(null)
+    setPreviewStrategiesVisible(false)
     try {
       setPreviewQuestion(await api(`/api/questions/${question.id}`))
     } catch (error) {
@@ -67,10 +68,20 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
     }
   }
 
-  function openStrategyQuestion(strategy, question) {
-    setActiveStrategyId(strategy.id)
-    setActiveQuestionId(question.id)
-    openQuestionPreview(question)
+  function updateStrategyQuestion(questionId, updates) {
+    setStrategies((previous) =>
+      previous.map((strategy) => ({
+        ...strategy,
+        questions: strategy.questions.map((question) =>
+          question.id === questionId
+            ? {
+                ...question,
+                ...updates,
+              }
+            : question,
+        ),
+      })),
+    )
   }
 
   async function submitPreviewAttempt(selectedOptions) {
@@ -96,10 +107,35 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
             }
           : current,
       )
+      updateStrategyQuestion(previewQuestion.id, {
+        is_wrong_active: response.is_wrong_active,
+        wrong_count: response.wrong_count,
+        attempt_count: response.attempt_count,
+        last_wrong_at: response.last_wrong_at,
+      })
       await reloadExams()
     } catch (error) {
       notify({ type: 'error', text: error.message })
     }
+  }
+
+  async function markStrategyQuestionLearned(question) {
+    await run(async () => {
+      await api(`/api/wrong-items/${question.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ learned: true }),
+      })
+      updateStrategyQuestion(question.id, { is_wrong_active: false })
+      setPreviewQuestion((current) =>
+        current?.id === question.id
+          ? {
+              ...current,
+              is_wrong_active: false,
+            }
+          : current,
+      )
+      await reloadExams()
+    }, '已移出错题集')
   }
 
   const grouped = useMemo(() => {
@@ -122,6 +158,8 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
           title: strategy.title,
           questions: strategy.questions,
           examGroups: [{ exam_code: strategy.exam_code, questions: strategy.questions }],
+          strategyIds: [strategy.id],
+          matchKeys: [],
         })
         continue
       }
@@ -133,12 +171,17 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
           title: strategy.title,
           questions: [],
           examGroups: [],
+          strategyIds: [],
+          matchKeys: [],
         }
         group.itemMap.set(titleKey, item)
         group.items.push(item)
       }
 
       const item = group.itemMap.get(titleKey)
+      if (!item.strategyIds.includes(strategy.id)) item.strategyIds.push(strategy.id)
+      const matchKey = getStrategyMatchKey(strategy)
+      if (!item.matchKeys.includes(matchKey)) item.matchKeys.push(matchKey)
       const examGroup = item.examGroups.find((entry) => entry.exam_code === strategy.exam_code)
       const target = examGroup || { exam_code: strategy.exam_code, questions: [] }
       target.questions = mergeQuestions(target.questions, strategy.questions)
@@ -147,6 +190,17 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
     }
     return Array.from(map.values()).map(({ itemMap, ...group }) => group)
   }, [examFilters.length, strategies])
+
+  const activePreviewStrategyMatches = useMemo(() => {
+    const ids = new Set()
+    const matchKeys = new Set()
+    if (!previewStrategiesVisible || !previewQuestion?.strategies?.length) return { ids, matchKeys }
+    for (const strategy of previewQuestion.strategies) {
+      ids.add(strategy.id)
+      matchKeys.add(getStrategyMatchKey(strategy))
+    }
+    return { ids, matchKeys }
+  }, [previewQuestion, previewStrategiesVisible])
 
   const isSingleColumn = layoutMode === '1'
   const displayedStrategyCount = grouped.reduce((total, group) => total + group.items.length, 0)
@@ -224,7 +278,9 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
               )}
             >
               {group.items.map((strategy) => {
-                const isActiveStrategy = activeStrategyId === strategy.id
+                const isActiveStrategy =
+                  strategy.strategyIds.some((id) => activePreviewStrategyMatches.ids.has(id)) ||
+                  strategy.matchKeys.some((key) => activePreviewStrategyMatches.matchKeys.has(key))
                 return (
                   <div
                     key={strategy.id}
@@ -256,26 +312,40 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                                 {EXAM_LABELS[examGroup.exam_code] || examGroup.exam_code.toUpperCase()}
                               </Badge>
                             )}
-                            {examGroup.questions.map((question) => {
-                              const isActiveQuestion = activeQuestionId === question.id
-                              return (
+                            {examGroup.questions.map((question) => (
+                              <span
+                                key={question.id}
+                                className={cn(
+                                  'inline-flex h-7 overflow-hidden rounded-md',
+                                  question.is_wrong_active && 'ring-1 ring-[#8e4940]/20 shadow-[0_0_0_3px_rgba(142,73,64,0.055)]',
+                                )}
+                              >
                                 <button
-                                  key={question.id}
                                   type="button"
                                   className={cn(
-                                    'inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
+                                    'inline-flex h-7 items-center px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
                                     question.is_wrong_active
                                       ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
                                       : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
-                                    isActiveQuestion && 'bg-ink-950 text-paper-50',
                                   )}
                                   title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
-                                  onClick={() => openStrategyQuestion(strategy, question)}
+                                  onClick={() => openQuestionPreview(question)}
                                 >
                                   {question.number}
                                 </button>
-                              )
-                            })}
+                                {question.is_wrong_active && (
+                                  <button
+                                    type="button"
+                                    className="grid h-7 w-7 place-items-center border-l border-[#8e4940]/10 bg-[#ead0ca] text-[#8e4940] transition hover:bg-[#8e4940] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8e4940]/20"
+                                    onClick={() => markStrategyQuestionLearned(question)}
+                                    aria-label={`第 ${question.number} 题学会了，移出错题集`}
+                                    title="学会了，移出错题集"
+                                  >
+                                    <CheckCircle2 size={13} />
+                                  </button>
+                                )}
+                              </span>
+                            ))}
                           </div>
                         ))}
                       </div>
@@ -284,7 +354,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                       <Button
                         variant="ghost"
                         className={cn(!isSingleColumn ? 'justify-self-start' : 'lg:justify-self-end')}
-                        onClick={() => openStrategyQuestion(strategy, strategy.questions[0])}
+                        onClick={() => openQuestionPreview(strategy.questions[0])}
                       >
                         <ArrowRight size={16} />
                         练习
@@ -310,6 +380,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
         loading={previewLoading}
         onSubmit={submitPreviewAttempt}
         onClose={closePreview}
+        onStrategiesVisibleChange={setPreviewStrategiesVisible}
         onPractice={() => {
           if (!previewQuestion) return
           onOpenQuestion(previewQuestion)
@@ -437,6 +508,10 @@ function normalizeStrategyTitle(title) {
   return String(title || '').trim().replace(/\s+/g, ' ')
 }
 
+function getStrategyMatchKey(strategy) {
+  return `${strategy.category || ''}||${normalizeStrategyTitle(strategy.title)}`
+}
+
 function mergeQuestions(current, incoming) {
   const map = new Map()
   for (const question of [...current, ...incoming]) {
@@ -445,7 +520,7 @@ function mergeQuestions(current, incoming) {
   return Array.from(map.values()).sort((a, b) => Number(a.number) - Number(b.number))
 }
 
-function QuestionPreviewDialog({ question, result, loading, onSubmit, onClose, onPractice }) {
+function QuestionPreviewDialog({ question, result, loading, onSubmit, onClose, onPractice, onStrategiesVisibleChange }) {
   const isOpen = Boolean(question || loading)
 
   useEffect(() => {
@@ -506,7 +581,15 @@ function QuestionPreviewDialog({ question, result, loading, onSubmit, onClose, o
             <div className="min-h-0 overflow-y-auto px-5 py-4 sm:px-6">
               {!question && <div className="py-12 text-center text-sm font-medium text-ink-400">正在加载题目...</div>}
 
-              {question && <QuestionCard question={question} result={result} onSubmit={onSubmit} variant="dialog" />}
+              {question && (
+                <QuestionCard
+                  question={question}
+                  result={result}
+                  onSubmit={onSubmit}
+                  variant="dialog"
+                  onStrategiesVisibleChange={onStrategiesVisibleChange}
+                />
+              )}
             </div>
 
             <div className="flex justify-end gap-2 border-t border-ink-950/[0.04] px-5 py-3 sm:px-6">
