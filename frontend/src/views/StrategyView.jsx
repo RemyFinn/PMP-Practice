@@ -96,22 +96,52 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
 
   const grouped = useMemo(() => {
     const map = new Map()
-    const groupByCategory = examFilters.length > 1
+    const mergeAcrossExams = examFilters.length > 1
     for (const strategy of strategies) {
-      const key = groupByCategory ? strategy.category : `${strategy.exam_code}-${strategy.category}`
+      const key = mergeAcrossExams ? strategy.category : `${strategy.exam_code}-${strategy.category}`
       if (!map.has(key)) {
         map.set(key, {
-          exam_code: groupByCategory ? null : strategy.exam_code,
+          exam_code: mergeAcrossExams ? null : strategy.exam_code,
           category: strategy.category,
           items: [],
+          itemMap: new Map(),
         })
       }
-      map.get(key).items.push(strategy)
+      const group = map.get(key)
+      if (!mergeAcrossExams) {
+        group.items.push({
+          id: strategy.id,
+          title: strategy.title,
+          questions: strategy.questions,
+          examGroups: [{ exam_code: strategy.exam_code, questions: strategy.questions }],
+        })
+        continue
+      }
+
+      const titleKey = normalizeStrategyTitle(strategy.title)
+      if (!group.itemMap.has(titleKey)) {
+        const item = {
+          id: titleKey,
+          title: strategy.title,
+          questions: [],
+          examGroups: [],
+        }
+        group.itemMap.set(titleKey, item)
+        group.items.push(item)
+      }
+
+      const item = group.itemMap.get(titleKey)
+      const examGroup = item.examGroups.find((entry) => entry.exam_code === strategy.exam_code)
+      const target = examGroup || { exam_code: strategy.exam_code, questions: [] }
+      target.questions = mergeQuestions(target.questions, strategy.questions)
+      item.questions = mergeQuestions(item.questions, strategy.questions)
+      if (!examGroup) item.examGroups.push(target)
     }
-    return Array.from(map.values())
+    return Array.from(map.values()).map(({ itemMap, ...group }) => group)
   }, [examFilters.length, strategies])
 
   const isSingleColumn = layoutMode === '1'
+  const displayedStrategyCount = grouped.reduce((total, group) => total + group.items.length, 0)
 
   return (
     <Screen>
@@ -146,7 +176,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
               )
             })}
           </div>
-          <Badge tone="blue">{strategies.length} 条思路</Badge>
+          <Badge tone="blue">{displayedStrategyCount} 条思路</Badge>
         </div>
       </div>
 
@@ -197,31 +227,35 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                 >
                   <div className="min-w-0">
                     <h3 className="flex flex-wrap items-start gap-2 text-[15px] leading-6">
-                      {!group.exam_code && (
-                        <Badge tone="blue" className="mt-0.5 h-6">
-                          {EXAM_LABELS[strategy.exam_code] || strategy.exam_code.toUpperCase()}
-                        </Badge>
-                      )}
                       <span className="min-w-0">
                         <StrategyText text={strategy.title} />
                       </span>
                     </h3>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {strategy.questions.map((question) => (
-                        <button
-                          key={question.id}
-                          type="button"
-                          className={cn(
-                            'inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
-                            question.is_wrong_active
-                              ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
-                              : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
+                    <div className="mt-2 grid gap-2">
+                      {strategy.examGroups.map((examGroup) => (
+                        <div key={examGroup.exam_code} className="flex flex-wrap items-center gap-1.5">
+                          {!group.exam_code && (
+                            <Badge tone="blue" className="h-7">
+                              {EXAM_LABELS[examGroup.exam_code] || examGroup.exam_code.toUpperCase()}
+                            </Badge>
                           )}
-                          title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
-                          onClick={() => openQuestionPreview(question)}
-                        >
-                          {question.number}
-                        </button>
+                          {examGroup.questions.map((question) => (
+                            <button
+                              key={question.id}
+                              type="button"
+                              className={cn(
+                                'inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
+                                question.is_wrong_active
+                                  ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
+                                  : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
+                              )}
+                              title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
+                              onClick={() => openQuestionPreview(question)}
+                            >
+                              {question.number}
+                            </button>
+                          ))}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -376,6 +410,19 @@ function ExamFilterControl({ exams, value, onChange }) {
     </div>
   )
 }
+
+function normalizeStrategyTitle(title) {
+  return String(title || '').trim().replace(/\s+/g, ' ')
+}
+
+function mergeQuestions(current, incoming) {
+  const map = new Map()
+  for (const question of [...current, ...incoming]) {
+    map.set(question.id, question)
+  }
+  return Array.from(map.values()).sort((a, b) => Number(a.number) - Number(b.number))
+}
+
 function QuestionPreviewDialog({ question, result, loading, onSubmit, onClose, onPractice }) {
   const isOpen = Boolean(question || loading)
 
