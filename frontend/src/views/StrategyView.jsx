@@ -231,30 +231,45 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                         <StrategyText text={strategy.title} />
                       </span>
                     </h3>
-                    <div className="mt-2 grid gap-2">
+                    <div className={cn('mt-3 grid gap-2', !group.exam_code && 'rounded-lg border border-ink-950/[0.045] bg-white/35 p-2')}>
                       {strategy.examGroups.map((examGroup) => (
-                        <div key={examGroup.exam_code} className="flex flex-wrap items-center gap-1.5">
-                          {!group.exam_code && (
-                            <Badge tone="blue" className="h-7">
-                              {EXAM_LABELS[examGroup.exam_code] || examGroup.exam_code.toUpperCase()}
-                            </Badge>
+                        <div
+                          key={examGroup.exam_code}
+                          className={cn(
+                            'min-w-0',
+                            !group.exam_code
+                              ? 'grid gap-2 rounded-md bg-paper-50/75 px-2.5 py-2 sm:grid-cols-[108px_minmax(0,1fr)] sm:items-start'
+                              : 'flex flex-wrap items-center gap-1.5',
                           )}
-                          {examGroup.questions.map((question) => (
-                            <button
-                              key={question.id}
-                              type="button"
-                              className={cn(
-                                'inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
-                                question.is_wrong_active
-                                  ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
-                                  : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
-                              )}
-                              title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
-                              onClick={() => openQuestionPreview(question)}
-                            >
-                              {question.number}
-                            </button>
-                          ))}
+                        >
+                          {!group.exam_code && (
+                            <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
+                              <Badge tone="blue" className="h-6">
+                                {EXAM_LABELS[examGroup.exam_code] || examGroup.exam_code.toUpperCase()}
+                              </Badge>
+                              <div className="font-latin text-[11px] font-semibold leading-none text-ink-400 tabular-nums">
+                                {examGroup.questions.length} 题
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex min-w-0 flex-wrap gap-1.5">
+                            {examGroup.questions.map((question) => (
+                              <button
+                                key={question.id}
+                                type="button"
+                                className={cn(
+                                  'inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
+                                  question.is_wrong_active
+                                    ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
+                                    : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
+                                )}
+                                title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
+                                onClick={() => openQuestionPreview(question)}
+                              >
+                                {question.number}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
