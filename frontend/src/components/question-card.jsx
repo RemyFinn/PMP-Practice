@@ -15,7 +15,7 @@ export function QuestionCard({
   className,
   variant = 'page',
   resultKey,
-  onStrategiesVisibleChange,
+  highlightedStrategyMatches,
 }) {
   const [selected, setSelected] = useState([])
   const [showStrategies, setShowStrategies] = useState(false)
@@ -24,7 +24,6 @@ export function QuestionCard({
   useEffect(() => {
     setSelected(result ? letters(result.selected_answer) : [])
     setShowStrategies(false)
-    onStrategiesVisibleChange?.(false)
   }, [question.id, result])
 
   async function submit(nextSelected = selected) {
@@ -61,13 +60,7 @@ export function QuestionCard({
         <QuestionMeta
           question={question}
           showStrategies={showStrategies}
-          onToggleStrategies={() =>
-            setShowStrategies((value) => {
-              const next = !value
-              onStrategiesVisibleChange?.(next)
-              return next
-            })
-          }
+          onToggleStrategies={() => setShowStrategies((value) => !value)}
         />
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
@@ -83,7 +76,9 @@ export function QuestionCard({
         {question.stem}
       </h1>
 
-      {showStrategies && question.strategies?.length > 0 && <StrategyPanel strategies={question.strategies} />}
+      {showStrategies && question.strategies?.length > 0 && (
+        <StrategyPanel strategies={question.strategies} highlightedStrategyMatches={highlightedStrategyMatches} />
+      )}
 
       <div className={cn('grid gap-1', isDialog ? 'mt-3' : 'mt-2.5')} role="group" aria-label="题目选项">
         {question.options.map((option) => {
@@ -172,7 +167,10 @@ function QuestionMeta({ question, showStrategies, onToggleStrategies }) {
   )
 }
 
-function StrategyPanel({ strategies }) {
+function StrategyPanel({ strategies, highlightedStrategyMatches }) {
+  const highlightedIds = new Set(highlightedStrategyMatches?.ids || [])
+  const highlightedKeys = new Set(highlightedStrategyMatches?.matchKeys || [])
+
   return (
     <div className="mt-3 rounded-xl bg-brass-100/60 p-3 text-sm text-ink-700 ring-1 ring-brass-600/[0.08]">
       <div className="mb-2 flex items-center gap-2 font-semibold text-ink-950">
@@ -180,8 +178,17 @@ function StrategyPanel({ strategies }) {
         解题思路
       </div>
       <div className="grid gap-2">
-        {strategies.map((strategy) => (
-          <div key={strategy.id} className="leading-6">
+        {strategies.map((strategy) => {
+          const isHighlighted =
+            highlightedIds.has(strategy.id) || highlightedKeys.has(getStrategyMatchKey(strategy))
+          return (
+          <div
+            key={strategy.id}
+            className={cn(
+              'leading-6 underline-offset-4',
+              isHighlighted && 'text-ink-950 underline decoration-brass-600 decoration-2',
+            )}
+          >
             <span className="font-semibold">{strategy.category}：</span>
             <StrategyText
               text={strategy.title}
@@ -189,10 +196,19 @@ function StrategyPanel({ strategies }) {
               restClassName="font-normal text-ink-700"
             />
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
+}
+
+function normalizeStrategyTitle(title) {
+  return String(title || '').trim().replace(/\s+/g, ' ')
+}
+
+function getStrategyMatchKey(strategy) {
+  return `${strategy.category || ''}||${normalizeStrategyTitle(strategy.title)}`
 }
 
 export function ResultPanel({ result }) {
