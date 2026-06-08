@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, Columns2, Columns3, Columns4, List, Search, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, Columns2, Columns3, Columns4, List, Search, X } from 'lucide-react'
 import { api } from '../api/client'
 import { EXAM_LABELS } from '../constants'
 import { QuestionCard } from '../components/question-card'
 import { StrategyText } from '../components/strategy-text'
-import { Badge, Button, CheckboxControl, Screen, TextField, inputClass, panelClass } from '../components/ui'
+import { Badge, Button, Screen, TextField, inputClass, panelClass } from '../components/ui'
 import { cn } from '../lib/utils'
 
 export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }) {
@@ -265,7 +265,37 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
 }
 
 function ExamFilterControl({ exams, value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef(null)
   const selected = new Set(value)
+  const selectedLabels = exams
+    .filter((exam) => selected.has(exam.code))
+    .map((exam) => EXAM_LABELS[exam.code] || exam.title)
+  const summary =
+    value.length === 0
+      ? '全部套卷'
+      : selectedLabels.length <= 2
+        ? selectedLabels.join('、')
+        : `已选 ${selectedLabels.length} 套`
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    function closeOnPointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false)
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    window.addEventListener('pointerdown', closeOnPointerDown)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      window.removeEventListener('pointerdown', closeOnPointerDown)
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
 
   function toggleExam(code) {
     const next = selected.has(code)
@@ -275,31 +305,77 @@ function ExamFilterControl({ exams, value, onChange }) {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-2 text-sm font-semibold text-ink-700">
-      <div>套卷</div>
-      <div className="flex min-h-11 flex-wrap items-center gap-2">
-        <Button
-          variant={value.length === 0 ? 'primary' : 'secondary'}
-          className="min-h-9 px-3 text-xs"
-          onClick={() => onChange([])}
-        >
-          全部套卷
-        </Button>
-        {exams.map((exam) => (
-          <CheckboxControl
-            key={exam.code}
-            checked={selected.has(exam.code)}
-            onCheckedChange={() => toggleExam(exam.code)}
-            className="min-h-9 self-auto px-2.5 text-xs"
+    <div ref={rootRef} className="relative flex min-w-0 flex-col gap-2 text-sm font-semibold text-ink-700">
+      <div id="strategy-exam-filter-label">套卷</div>
+      <button
+        type="button"
+        className={cn(
+          'flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-ink-950/[0.055] bg-white/68 px-3 text-left text-sm font-semibold leading-none text-ink-950 outline-none transition hover:bg-white focus-visible:border-ink-950/[0.13] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-ink-950/[0.025]',
+          open && 'border-ink-950/[0.13] bg-white',
+        )}
+        aria-labelledby="strategy-exam-filter-label"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className={cn('min-w-0 truncate', value.length === 0 && 'text-ink-600')}>{summary}</span>
+        <ChevronDown size={15} className={cn('shrink-0 text-ink-400 transition', open && 'rotate-180')} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-lg border border-ink-950/[0.055] bg-paper-50/95 p-1 text-sm text-ink-900 shadow-[0_10px_24px_rgba(42,35,28,0.07)] backdrop-blur-xl"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12, ease: 'easeOut' }}
+            role="listbox"
+            aria-multiselectable="true"
           >
-            {exam.title}
-          </CheckboxControl>
-        ))}
-      </div>
+            <button
+              type="button"
+              className={cn(
+                'flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm font-semibold outline-none transition hover:bg-ink-950/[0.055]',
+                value.length === 0 && 'bg-ink-950/[0.045] text-ink-950',
+              )}
+              onClick={() => onChange([])}
+              role="option"
+              aria-selected={value.length === 0}
+            >
+              <span className="grid size-4 shrink-0 place-items-center">
+                {value.length === 0 && <Check size={14} />}
+              </span>
+              全部套卷
+            </button>
+            <div className="my-1 h-px bg-ink-950/[0.045]" />
+            {exams.map((exam) => {
+              const checked = selected.has(exam.code)
+              return (
+                <button
+                  key={exam.code}
+                  type="button"
+                  className={cn(
+                    'flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm font-semibold outline-none transition hover:bg-ink-950/[0.055]',
+                    checked && 'bg-ink-950/[0.045] text-ink-950',
+                  )}
+                  onClick={() => toggleExam(exam.code)}
+                  role="option"
+                  aria-selected={checked}
+                >
+                  <span className="grid size-4 shrink-0 place-items-center text-ink-800">
+                    {checked && <Check size={14} />}
+                  </span>
+                  <span className="min-w-0 truncate">{exam.title}</span>
+                </button>
+              )
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
-
 function QuestionPreviewDialog({ question, result, loading, onSubmit, onClose, onPractice }) {
   const isOpen = Boolean(question || loading)
 
