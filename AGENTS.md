@@ -41,6 +41,75 @@ PMP_TEST_DATABASE_URL='postgresql://pmp:pmp_password@127.0.0.1:5432/pmp_practice
 - 如果测试失败，先说明失败对应哪条 spec 行为变化，再做最小修复。
 - 不用测试失败作为顺手修 bug 或扩大重构范围的理由。
 
+## 常用修改发布流程
+
+当用户要求完成一次可上线的小修改时，默认按下面流程执行。除非用户明确只要本地改动或只要分析，否则完成后提交并推送当前分支；涉及线上可见前端或后端行为时，再部署到 ECS。
+
+1. 先确认 issue 分类和影响面：`local-bug`、`design-change`、`public-contract` 或 `shared-root-cause`。
+2. 修改前查看 `git status --short`，确认工作区是否有他人未提交改动；不要回滚无关改动。
+3. 按本文件的 spec 对账规则更新相关 spec。前端当前行为通常更新：
+
+```text
+docs/current-behavior-spec.md
+spec/implemented/current-behavior-baseline.md
+```
+
+4. 小步修改代码；前端改动后运行：
+
+```bash
+npm run build
+```
+
+构建会更新 `static/index.html` 和 `static/assets/*` 哈希文件。若本次要部署前端，提交时必须包含这些构建产物。
+
+5. 运行全部特征测试：
+
+```bash
+PMP_TEST_DATABASE_URL='postgresql://pmp:pmp_password@127.0.0.1:5432/pmp_practice' \
+.venv/bin/python -m unittest tests.feature.test_current_behavior_api -v
+```
+
+如果本地 PostgreSQL 未启动，测试会在连接 `127.0.0.1:5432` 时 `Connection refused`。这种情况要在最终说明中明确标注为环境问题，而不是业务断言失败。
+
+6. 检查 diff 和状态：
+
+```bash
+git diff --stat
+git status --short
+```
+
+7. 提交并推送当前分支：
+
+```bash
+git add <本次相关文件>
+git commit -m "<简短英文提交信息>"
+git push
+```
+
+8. 部署到 ECS。已有线上 PostgreSQL 数据时默认跳过迁移：
+
+```bash
+ECS_HOST=47.111.178.141 \
+ECS_USER=root \
+ECS_KEY=~/.ssh/pmp_trainer_ecs_ed25519 \
+APP_DIR=/opt/pmp-trainer \
+WEB_HOST=127.0.0.1 \
+WEB_PORT=18000 \
+POSTGRES_HOST=127.0.0.1 \
+DOMAIN=http://47.111.178.141 \
+SKIP_MIGRATION=1 \
+./scripts/deploy_ecs.sh
+```
+
+部署脚本末尾可能出现 `curl: (52) Empty reply from server`。这不是最终判定；继续做服务器本机健康检查：
+
+```bash
+ssh -i ~/.ssh/pmp_trainer_ecs_ed25519 root@47.111.178.141 \
+  "curl -i --max-time 10 http://127.0.0.1:18000/api/health"
+```
+
+只有返回 `HTTP/1.1 200 OK` 且响应体为 `{"ok":true}` 时，才能说明部署已验证。
+
 ## Spec 对账规则
 
 每次 PR 合并前，必须对照 `spec/README.md` 和具体 spec 条目做状态账本检查。
