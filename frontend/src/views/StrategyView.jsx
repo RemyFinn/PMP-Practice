@@ -253,9 +253,35 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
 }
 
 function QuestionPreviewDialog({ question, result, loading, onSubmit, onClose, onPractice }) {
+  const isOpen = Boolean(question || loading)
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+
+    const scrollY = window.scrollY
+    const { style } = document.body
+    const previousPosition = style.position
+    const previousTop = style.top
+    const previousWidth = style.width
+    const previousOverflow = style.overflow
+
+    style.position = 'fixed'
+    style.top = `-${scrollY}px`
+    style.width = '100%'
+    style.overflow = 'hidden'
+
+    return () => {
+      style.position = previousPosition
+      style.top = previousTop
+      style.width = previousWidth
+      style.overflow = previousOverflow
+      window.scrollTo(0, scrollY)
+    }
+  }, [isOpen])
+
   return (
     <AnimatePresence>
-      {(question || loading) && (
+      {isOpen && (
         <motion.div
           className="fixed inset-0 z-50 grid place-items-center bg-ink-950/18 px-3 py-5 backdrop-blur-sm"
           initial={{ opacity: 0 }}

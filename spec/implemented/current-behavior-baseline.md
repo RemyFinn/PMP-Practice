@@ -125,6 +125,7 @@ Issue-Class: public-contract
 - 刷新页面会丢失当前练习上下文。
 - 字体模式保存在 `localStorage.pmp-font-mode`。
 - 策略布局保存在 `localStorage.pmp-strategy-layout`。
+- 思路页打开题目预览弹层时，底层页面滚动被锁定；弹层内部题目区域仍可独立滚动。
 - 练习计时基于浏览器 `Date.now()` 和 `window.setInterval()`。
 - 单选题点击选项会立即提交；多选题需要点击提交按钮。
 
@@ -138,6 +139,7 @@ Issue-Class: public-contract
 - 错题 patch 和手动计数保持当前 `wrong_items` delta 合成规则。
 - 题库 CRUD 保持答案规范化、选项替换、软删除和错误路径。
 - 策略 API 保持当前排序、嵌套题和用户错题状态。
+- 思路页题目预览弹层打开期间背景页面不可滑动，关闭弹层后恢复打开前的页面滚动位置。
 - 特征测试全绿：
 
 ```bash
