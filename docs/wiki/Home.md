@@ -7,6 +7,7 @@
 - [项目概览](Overview.md)
 - [本地运行](Local-Setup.md)
 - [阿里云 1Panel 部署](Deployment-1Panel.md)
+- [一键部署到 ECS](One-Command-ECS-Deploy.md)
 - [旧 SQLite 数据迁移](Data-Migration.md)
 - [用户与权限](Users-and-Permissions.md)
 - [运维与排障](Operations.md)

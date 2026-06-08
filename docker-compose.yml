@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-pmp}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pmp_password}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_HOST:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,12 @@ services:
 
   web:
     container_name: pmp-web
-    build: .
+    build:
+      context: .
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-mirrors.aliyun.com}
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-pmp}:${POSTGRES_PASSWORD:-pmp_password}@postgres:5432/${POSTGRES_DB:-pmp_practice}
       SESSION_SECRET: ${SESSION_SECRET:-replace-with-a-long-random-string}
@@ -27,7 +32,9 @@ services:
       FIRST_ADMIN_DISPLAY_NAME: ${FIRST_ADMIN_DISPLAY_NAME:-Remy}
       COOKIE_SECURE: ${COOKIE_SECURE:-0}
     ports:
-      - "${WEB_PORT:-8000}:8000"
+      - "${WEB_HOST:-127.0.0.1}:${WEB_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data:ro
     depends_on:
       postgres:
         condition: service_healthy

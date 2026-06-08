@@ -52,20 +52,21 @@ python scripts/verify_api.py
 
 ## 阿里云 1Panel 部署
 
-1. 在阿里云 ECS 安装 Docker 和 1Panel。
-2. 在 1Panel 创建应用编排，使用本仓库的 `docker-compose.yml`。
-3. 设置环境变量：
-   - `POSTGRES_DB`
-   - `POSTGRES_USER`
-   - `POSTGRES_PASSWORD`
-   - `SESSION_SECRET`
-   - `FIRST_ADMIN_USERNAME`
-   - `FIRST_ADMIN_PASSWORD`
-   - `FIRST_ADMIN_DISPLAY_NAME`
-   - `COOKIE_SECURE=1`
-4. 给 PostgreSQL 配置持久化数据卷，定期备份 `postgres_data`。
-5. 在 1Panel 网站/反向代理中绑定域名到 Web 容器的 `8000` 端口，并开启 HTTPS。
-6. 部署后访问 `/api/health`，返回 `{"ok": true}` 表示服务可用。
+一键部署脚本：
+
+```bash
+ECS_HOST=47.111.178.141 \
+ECS_USER=root \
+ECS_KEY=~/.ssh/pmp_trainer_ecs_ed25519 \
+APP_DIR=/opt/pmp-trainer \
+WEB_HOST=127.0.0.1 \
+WEB_PORT=18000 \
+DOMAIN=http://47.111.178.141 \
+./scripts/deploy_ecs.sh
+```
+
+应用默认只监听服务器本机 `127.0.0.1:18000`，由 1Panel/OpenResty 反向代理到公网 `80/443`。
+部署后访问 `/api/health`，返回 `{"ok": true}` 表示服务可用。
 
 ## 数据源
 
