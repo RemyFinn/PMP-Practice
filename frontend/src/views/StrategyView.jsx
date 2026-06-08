@@ -13,6 +13,8 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   const [examFilters, setExamFilters] = useState([])
   const [search, setSearch] = useState('')
   const [layoutMode, setLayoutMode] = useState(() => normalizeLayoutMode(localStorage.getItem('pmp-strategy-layout')))
+  const [activeStrategyId, setActiveStrategyId] = useState(null)
+  const [activeQuestionId, setActiveQuestionId] = useState(null)
   const [previewQuestion, setPreviewQuestion] = useState(null)
   const [previewResult, setPreviewResult] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -63,6 +65,12 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
     } finally {
       setPreviewLoading(false)
     }
+  }
+
+  function openStrategyQuestion(strategy, question) {
+    setActiveStrategyId(strategy.id)
+    setActiveQuestionId(question.id)
+    openQuestionPreview(question)
   }
 
   async function submitPreviewAttempt(selectedOptions) {
@@ -215,62 +223,76 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                 layoutMode === '4' && 'grid gap-2 xl:grid-cols-3 2xl:grid-cols-4',
               )}
             >
-              {group.items.map((strategy) => (
-                <div
-                  key={strategy.id}
-                  className={cn(
-                    'min-w-0',
-                    !isSingleColumn
-                      ? 'grid gap-3 rounded-lg bg-ink-950/[0.018] p-3 transition hover:bg-ink-950/[0.028]'
-                      : 'grid gap-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start',
-                  )}
-                >
-                  <div className="min-w-0">
-                    <h3 className="flex flex-wrap items-start gap-2 text-[15px] leading-6">
-                      <span className="min-w-0">
-                        <StrategyText text={strategy.title} />
-                      </span>
-                    </h3>
-                    <div className="mt-2 grid gap-2">
-                      {strategy.examGroups.map((examGroup) => (
-                        <div key={examGroup.exam_code} className="flex flex-wrap items-center gap-1.5">
-                          {!group.exam_code && (
-                            <Badge tone="blue" className="h-7">
-                              {EXAM_LABELS[examGroup.exam_code] || examGroup.exam_code.toUpperCase()}
-                            </Badge>
+              {group.items.map((strategy) => {
+                const isActiveStrategy = activeStrategyId === strategy.id
+                return (
+                  <div
+                    key={strategy.id}
+                    className={cn(
+                      'min-w-0 border border-transparent',
+                      !isSingleColumn
+                        ? 'grid gap-3 rounded-lg bg-ink-950/[0.018] p-3 transition hover:bg-ink-950/[0.028]'
+                        : 'grid gap-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start',
+                      isActiveStrategy && 'border-brass-600/20 bg-brass-100/45',
+                      isSingleColumn && isActiveStrategy && 'rounded-lg px-3',
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <h3 className="flex flex-wrap items-start gap-2 text-[15px] leading-6">
+                        <span
+                          className={cn(
+                            'min-w-0',
+                            isActiveStrategy && 'underline decoration-brass-600/60 decoration-2 underline-offset-4',
                           )}
-                          {examGroup.questions.map((question) => (
-                            <button
-                              key={question.id}
-                              type="button"
-                              className={cn(
-                                'inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
-                                question.is_wrong_active
-                                  ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
-                                  : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
-                              )}
-                              title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
-                              onClick={() => openQuestionPreview(question)}
-                            >
-                              {question.number}
-                            </button>
-                          ))}
-                        </div>
-                      ))}
+                        >
+                          <StrategyText text={strategy.title} />
+                        </span>
+                      </h3>
+                      <div className="mt-2 grid gap-2">
+                        {strategy.examGroups.map((examGroup) => (
+                          <div key={examGroup.exam_code} className="flex flex-wrap items-center gap-1.5">
+                            {!group.exam_code && (
+                              <Badge tone="blue" className="h-7">
+                                {EXAM_LABELS[examGroup.exam_code] || examGroup.exam_code.toUpperCase()}
+                              </Badge>
+                            )}
+                            {examGroup.questions.map((question) => {
+                              const isActiveQuestion = activeQuestionId === question.id
+                              return (
+                                <button
+                                  key={question.id}
+                                  type="button"
+                                  className={cn(
+                                    'inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
+                                    question.is_wrong_active
+                                      ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
+                                      : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
+                                    isActiveQuestion && 'bg-ink-950 text-paper-50',
+                                  )}
+                                  title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
+                                  onClick={() => openStrategyQuestion(strategy, question)}
+                                >
+                                  {question.number}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                    {strategy.questions[0] && (
+                      <Button
+                        variant="ghost"
+                        className={cn(!isSingleColumn ? 'justify-self-start' : 'lg:justify-self-end')}
+                        onClick={() => openStrategyQuestion(strategy, strategy.questions[0])}
+                      >
+                        <ArrowRight size={16} />
+                        练习
+                      </Button>
+                    )}
                   </div>
-                  {strategy.questions[0] && (
-                    <Button
-                      variant="ghost"
-                      className={cn(!isSingleColumn ? 'justify-self-start' : 'lg:justify-self-end')}
-                      onClick={() => openQuestionPreview(strategy.questions[0])}
-                    >
-                      <ArrowRight size={16} />
-                      练习
-                    </Button>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         ))}

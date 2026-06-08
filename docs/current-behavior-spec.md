@@ -115,5 +115,6 @@
 - 字体模式保存在 `localStorage.pmp-font-mode`。
 - 策略布局保存在 `localStorage.pmp-strategy-layout`。
 - 思路页套卷筛选是 React 内存态下拉多选；选择多个套卷时，思路按分类分组，同一分类下标题一致的思路合并为一张卡片，并在卡片内按套卷展示题号。
+- 思路页点击题号或练习后，来源思路和当前题号以 React 内存态高亮；其他思路仍完整保留。
 - 练习计时基于浏览器 `Date.now()` 和 `window.setInterval()`。
 - 单选题点击选项会立即提交；多选题需要点击提交按钮。
