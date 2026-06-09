@@ -300,6 +300,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                                     lastPreviewedQuestionId === question.id && 'ring-1 ring-brass-600/35',
                                   )}
                                   data-last-previewed={lastPreviewedQuestionId === question.id ? 'true' : undefined}
+                                  data-wrong-active={question.is_wrong_active ? 'true' : undefined}
                                   aria-current={lastPreviewedQuestionId === question.id ? 'true' : undefined}
                                   title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
                                   onClick={() => openQuestionPreview(question, strategy)}
