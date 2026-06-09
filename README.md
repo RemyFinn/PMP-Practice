@@ -1,4 +1,4 @@
-# PMP 做题系统
+# PMP Practice Coach
 
 FastAPI + React + PostgreSQL 的 PMP 刷题系统。支持四套模拟题、混合练习、错题集、思路总结、计时、题库管理和多用户独立错题记录。
 
@@ -17,7 +17,7 @@ docs/wiki/Home.md
 推荐本地也使用 Docker PostgreSQL，保证和阿里云部署一致。
 
 ```bash
-cd /Users/remy/Desktop/PMP学习/pmp-practice-system
+cd /Users/remy/Desktop/PMP学习/pmp-practice-coach
 cp .env.example .env
 docker compose up -d postgres
 

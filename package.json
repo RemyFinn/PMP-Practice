@@ -1,7 +1,7 @@
 {
-  "name": "pmp-practice-system",
+  "name": "pmp-practice-coach",
   "version": "1.0.0",
-  "description": "可本地运行和部署的 PMP 做题系统，使用 FastAPI、React 和 PostgreSQL 保存题库、错题集和作答记录。",
+  "description": "可本地运行和部署的 PMP Practice Coach，使用 FastAPI、React 和 PostgreSQL 保存题库、错题集和作答记录。",
   "main": "index.js",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
