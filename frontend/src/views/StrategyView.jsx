@@ -9,21 +9,11 @@ import { StrategyText } from '../components/strategy-text'
 import { Badge, Button, Screen, TextField, inputClass, panelClass } from '../components/ui'
 import { cn } from '../lib/utils'
 
-const MARKER_EFFECTS = [
-  { value: 'diffusion', label: '柔雾' },
-  { value: 'gleam', label: '流光' },
-  { value: 'pulse', label: '呼吸' },
-  { value: 'edge', label: '描边' },
-  { value: 'ink', label: '墨色' },
-  { value: 'halo', label: '柔光' },
-]
-
 export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }) {
   const [strategies, setStrategies] = useState([])
   const [examFilters, setExamFilters] = useState([])
   const [search, setSearch] = useState('')
   const [layoutMode, setLayoutMode] = useState(() => normalizeLayoutMode(localStorage.getItem('pmp-strategy-layout')))
-  const [markerEffect, setMarkerEffect] = useState(() => normalizeMarkerEffect(localStorage.getItem('pmp-strategy-marker-effect')))
   const [previewQuestion, setPreviewQuestion] = useState(null)
   const [previewResult, setPreviewResult] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -51,10 +41,6 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   useEffect(() => {
     localStorage.setItem('pmp-strategy-layout', layoutMode)
   }, [layoutMode])
-
-  useEffect(() => {
-    localStorage.setItem('pmp-strategy-marker-effect', markerEffect)
-  }, [markerEffect])
 
   function closePreview() {
     setPreviewQuestion(null)
@@ -210,7 +196,6 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
           <p className="mt-1 text-sm text-ink-400">按解题思路查看题目，点击题号练习。</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <MarkerEffectControl value={markerEffect} onChange={setMarkerEffect} />
           <div className="inline-flex h-9 rounded-md bg-ink-950/[0.045] p-1">
             {[
               { value: '1', label: '列表', icon: List },
@@ -315,7 +300,6 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                                     lastPreviewedQuestionId === question.id && 'ring-1 ring-brass-600/35',
                                   )}
                                   data-last-previewed={lastPreviewedQuestionId === question.id ? 'true' : undefined}
-                                  data-marker-effect={lastPreviewedQuestionId === question.id ? markerEffect : undefined}
                                   data-wrong-active={question.is_wrong_active ? 'true' : undefined}
                                   aria-current={lastPreviewedQuestionId === question.id ? 'true' : undefined}
                                   title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
@@ -368,34 +352,6 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
         }}
       />
     </Screen>
-  )
-}
-
-function MarkerEffectControl({ value, onChange }) {
-  return (
-    <div
-      className="flex flex-wrap items-center gap-1 rounded-md bg-ink-950/[0.045] p-1"
-      role="group"
-      aria-label="选择题号标记效果"
-    >
-      {MARKER_EFFECTS.map((effect, index) => (
-        <button
-          key={effect.value}
-          type="button"
-          className="strategy-question-button strategy-marker-swatch inline-flex h-8 min-w-[58px] items-center justify-center rounded-md px-2.5 text-xs font-semibold leading-none transition"
-          data-last-previewed="true"
-          data-marker-effect={effect.value}
-          aria-pressed={value === effect.value}
-          title={`${index + 1} ${effect.label}`}
-          onClick={() => onChange(effect.value)}
-        >
-          <span className="relative z-10 inline-flex items-center gap-1.5">
-            <span className="font-latin tabular-nums">{index + 1}</span>
-            <span>{effect.label}</span>
-          </span>
-        </button>
-      ))}
-    </div>
   )
 }
 
@@ -641,8 +597,4 @@ function normalizeLayoutMode(value) {
   if (value === 'list') return '1'
   if (value === 'grid') return '2'
   return ['1', '2', '3', '4'].includes(value) ? value : '1'
-}
-
-function normalizeMarkerEffect(value) {
-  return MARKER_EFFECTS.some((effect) => effect.value === value) ? value : 'diffusion'
 }
