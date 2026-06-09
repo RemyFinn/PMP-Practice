@@ -23,7 +23,8 @@ import { Button, SegmentedControl } from './ui'
 
 const FONT_MODE_OPTIONS = [
   { value: 'default', label: '默认' },
-  { value: 'system', label: '粗体' },
+  { value: 'system', label: '系统' },
+  { value: 'bold', label: '粗体' },
 ]
 
 export function Sidebar({ view, totals, user, onLogout }) {

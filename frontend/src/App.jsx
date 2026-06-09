@@ -41,7 +41,7 @@ export default function App() {
   const [submitted, setSubmitted] = useState(new Map())
   const [fontMode, setFontMode] = useState(() => {
     const saved = localStorage.getItem('pmp-font-mode')
-    return saved === 'system' ? 'system' : 'default'
+    return saved === 'system' || saved === 'bold' ? saved : 'default'
   })
   const [themeMode, setThemeMode] = useState(() => {
     const saved = localStorage.getItem('pmp-theme-mode')

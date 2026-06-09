@@ -30,23 +30,9 @@
   --shadow-quiet: 0 18px 50px rgb(42 35 28 / 0.08);
   --shadow-hairline: 0 1px 0 rgb(42 35 28 / 0.08);
   color-scheme: light;
-  --font-sans:
-    "Avenir Next",
-    "Fira Sans",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  --font-sans: Georgia, "Songti SC", STSong, serif;
   --font-serif: Georgia, "Songti SC", STSong, serif;
-  --font-latin:
-    "SF Pro Text",
-    "Segoe UI",
-    "Avenir Next",
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  --font-latin: Georgia, "Songti SC", STSong, serif;
   color: rgb(var(--ink-950));
   background: rgb(var(--paper-50));
   font-family: var(--font-sans);
@@ -86,7 +72,8 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-html[data-font="system"] {
+html[data-font="system"],
+html[data-font="bold"] {
   --font-sans:
     "Microsoft YaHei",
     "PingFang SC",
@@ -113,24 +100,13 @@ html[data-font="system"] {
 }
 
 html[data-font="default"] {
-  --font-sans:
-    "Avenir Next",
-    "Fira Sans",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    "PingFang SC",
-    sans-serif;
+  --font-sans: Georgia, "Songti SC", STSong, serif;
   --font-serif: Georgia, "Songti SC", STSong, serif;
-  --font-latin:
-    "SF Pro Text",
-    "Segoe UI",
-    "Avenir Next",
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  --font-latin: Georgia, "Songti SC", STSong, serif;
+}
+
+html[data-font="bold"] .question-stem {
+  font-weight: 700;
 }
 
 * {

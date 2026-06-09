@@ -160,7 +160,10 @@ export function SegmentedControl({ value, onValueChange, options, label, ariaLab
       aria-label={ariaLabel}
     >
       {label && <span className="leading-none text-ink-600">{label}</span>}
-      <div className="inline-grid grid-cols-2 rounded-full bg-ink-950/[0.055] p-0.5">
+      <div
+        className="inline-grid rounded-full bg-ink-950/[0.055] p-0.5"
+        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      >
         {options.map((option) => {
           const active = option.value === value
           return (

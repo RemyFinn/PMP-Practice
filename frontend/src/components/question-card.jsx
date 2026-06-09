@@ -67,7 +67,7 @@ export function QuestionCard({
 
       <h1
         className={cn(
-          'whitespace-pre-wrap font-serif tracking-tight text-ink-950',
+          'question-stem whitespace-pre-wrap font-serif tracking-tight text-ink-950',
           isDialog
             ? 'max-w-none text-[19px] leading-[1.55] sm:text-[21px]'
             : 'max-w-4xl text-[22px] leading-[1.6] sm:text-[26px]',
