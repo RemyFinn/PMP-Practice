@@ -109,17 +109,29 @@ html[data-font="bold"] .question-stem {
   overflow: hidden;
 }
 
+.strategy-question-button::before,
 .strategy-question-button::after {
   position: absolute;
-  right: 6px;
-  bottom: 3px;
-  left: 6px;
-  height: 2px;
-  border-radius: 999px;
-  background: rgb(var(--brass-600));
-  box-shadow: 0 0 10px rgb(var(--brass-600) / 0.42);
   content: "";
   opacity: 0;
+  pointer-events: none;
+}
+
+.strategy-question-button::after {
+  right: 6px;
+  bottom: 3.5px;
+  left: 6px;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--brass-600) / 0.65) 18%,
+    rgb(var(--brass-600) / 0.92) 50%,
+    rgb(var(--brass-600) / 0.65) 82%,
+    transparent
+  );
+  box-shadow: 0 0 5px rgb(var(--brass-600) / 0.24);
   transform: scaleX(0.35);
   transition:
     opacity 160ms ease,
@@ -127,25 +139,51 @@ html[data-font="bold"] .question-stem {
   transform-origin: center;
 }
 
+.strategy-question-button::before {
+  bottom: 2px;
+  left: 5px;
+  z-index: 1;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(var(--paper-50));
+  box-shadow:
+    0 0 0 1px rgb(var(--brass-600) / 0.88),
+    0 0 8px rgb(var(--brass-600) / 0.72);
+  transform: translateX(-8px);
+}
+
 .strategy-question-button[data-last-previewed="true"]::after {
-  opacity: 1;
+  opacity: 0.95;
   transform: scaleX(1);
 }
 
+.strategy-question-button[data-last-previewed="true"]::before {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .strategy-question-button[data-last-previewed="true"]::after {
-    animation: strategy-question-marker 1.8s ease-in-out infinite;
+  .strategy-question-button[data-last-previewed="true"]::before {
+    animation: strategy-question-sweep 1.65s cubic-bezier(0.45, 0, 0.35, 1) infinite;
   }
 }
 
-@keyframes strategy-question-marker {
-  0%,
-  100% {
-    box-shadow: 0 0 8px rgb(var(--brass-600) / 0.3);
+@keyframes strategy-question-sweep {
+  0% {
+    opacity: 0;
+    left: 5px;
+    transform: translateX(-7px);
   }
 
-  50% {
-    box-shadow: 0 0 14px rgb(var(--brass-600) / 0.55);
+  18%,
+  78% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    left: calc(100% - 5px);
+    transform: translateX(4px);
   }
 }
 
