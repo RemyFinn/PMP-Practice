@@ -509,7 +509,7 @@ function QuestionPreviewDialog({
           <Dialog.Portal forceMount>
             <Dialog.Overlay forceMount asChild>
               <motion.div
-                className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink-950/18 px-3 py-5 backdrop-blur-sm"
+                className="fixed inset-0 z-50 grid place-items-center bg-ink-950/18 px-3 py-5 backdrop-blur-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
