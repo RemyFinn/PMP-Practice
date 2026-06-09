@@ -96,8 +96,57 @@ html[data-font="bold"] {
   font-weight: 500;
 }
 
+html[data-font="default"] .question-stem {
+  font-weight: 500;
+}
+
 html[data-font="bold"] .question-stem {
   font-weight: 700;
+}
+
+.strategy-question-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.strategy-question-button::after {
+  position: absolute;
+  right: 6px;
+  bottom: 3px;
+  left: 6px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgb(var(--brass-600));
+  box-shadow: 0 0 10px rgb(var(--brass-600) / 0.42);
+  content: "";
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    opacity 160ms ease,
+    transform 180ms ease;
+  transform-origin: center;
+}
+
+.strategy-question-button[data-last-previewed="true"]::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .strategy-question-button[data-last-previewed="true"]::after {
+    animation: strategy-question-marker 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes strategy-question-marker {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgb(var(--brass-600) / 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 14px rgb(var(--brass-600) / 0.55);
+  }
 }
 
 * {

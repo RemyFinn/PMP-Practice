@@ -18,6 +18,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   const [previewResult, setPreviewResult] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewSourceStrategyMatches, setPreviewSourceStrategyMatches] = useState(null)
+  const [lastPreviewedQuestionId, setLastPreviewedQuestionId] = useState(null)
 
   async function loadStrategies() {
     let path = '/api/strategies'
@@ -48,6 +49,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   }
 
   async function openQuestionPreview(question, sourceStrategy) {
+    setLastPreviewedQuestionId(question.id)
     setPreviewLoading(true)
     setPreviewResult(null)
     setPreviewSourceStrategyMatches(sourceStrategy ? getStrategyMatches(sourceStrategy) : null)
@@ -286,16 +288,19 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                             {examGroup.questions.map((question) => (
                               <span
                                 key={question.id}
-                                className="inline-flex h-7 overflow-hidden rounded-md"
+                                className="inline-flex h-7 rounded-md"
                               >
                                 <button
                                   type="button"
                                   className={cn(
-                                    'inline-flex h-7 items-center px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
+                                    'strategy-question-button inline-flex h-7 items-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
                                     question.is_wrong_active
                                       ? 'bg-danger-surface text-danger-text hover:bg-danger-strong hover:text-white'
                                       : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
+                                    lastPreviewedQuestionId === question.id && 'ring-1 ring-brass-600/35',
                                   )}
+                                  data-last-previewed={lastPreviewedQuestionId === question.id ? 'true' : undefined}
+                                  aria-current={lastPreviewedQuestionId === question.id ? 'true' : undefined}
                                   title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
                                   onClick={() => openQuestionPreview(question, strategy)}
                                 >
