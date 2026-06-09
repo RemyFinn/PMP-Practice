@@ -110,7 +110,6 @@ export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, o
           value={fontMode}
           onValueChange={setFontMode}
           options={FONT_MODE_OPTIONS}
-          label="字体"
           ariaLabel="切换界面字体"
         />
         <Button variant="ghost" onClick={onRefresh} disabled={loading}>

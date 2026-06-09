@@ -126,9 +126,10 @@ Issue-Class: public-contract
 - 字体模式保存在 `localStorage.pmp-font-mode`。
 - 主题模式保存在 `localStorage.pmp-theme-mode`；未保存时默认浅色，顶栏图标按钮在浅色和深色之间切换。
 - 策略布局保存在 `localStorage.pmp-strategy-layout`。
-- 字体模式通过顶栏分段控件在默认字体和粗体模式之间切换。
+- 字体模式通过顶栏分段控件在默认字体和粗体模式之间切换；控件只显示“默认 / 粗体”，不显示额外“字体”标签。
 - 通用下拉选择器使用 Radix Select 官方结构，包含滚动按钮、Viewport、ItemText 和 ItemIndicator；前端不手写 body padding 或 margin 补偿。
 - 思路页套卷筛选是 React 内存态下拉多选；选择多个套卷时，思路按分类分组，同一分类下标题一致的思路合并为一张卡片，并在卡片内按套卷展示题号。
+- 思路页列表布局在小屏使用卡片间距展示思路项，不启用 `divide-y` 行分隔线；中等及以上宽度才恢复列表分隔线。
 - 思路页从某个外层思路卡片点开题目预览后，弹层内展开解题思路时，与来源卡片对应的解题思路文本以 React 内存态细下划线高亮。
 - 思路页题目预览提交后会把返回的错题状态同步到外层题号；外层错题题号突出显示，弹层内可二次确认标记学会以移出错题集。
 - 思路页题目预览弹层使用 Radix Dialog 管理 modal、焦点和背景滚动锁；当前滚动根 `html` 在 `body[data-scroll-locked]` 期间同步隐藏滚动条，底层页面和全屏遮罩不可滚动，弹层内部题目区域仍可独立滚动。
@@ -145,7 +146,7 @@ Issue-Class: public-contract
 - 错题 patch 和手动计数保持当前 `wrong_items` delta 合成规则。
 - 题库 CRUD 保持答案规范化、选项替换、软删除和错误路径。
 - 策略 API 保持当前排序、嵌套题和用户错题状态。
-- 字体分段控件在 `default/system` 字体模式之间切换，显示文案为“默认 / 粗体”，并继续写入 `localStorage.pmp-font-mode`。
+- 字体分段控件在 `default/system` 字体模式之间切换，显示文案为“默认 / 粗体”，不显示额外“字体”标签，并继续写入 `localStorage.pmp-font-mode`。
 - 通用下拉选择器保持 Radix Select 官方结构；应用代码不包含 body padding 或 margin 滚动条补偿。
 - 思路页题目预览弹层由 Radix Dialog 管理背景滚动锁；应用代码不直接写入 body position、overflow、padding 或 margin 补偿。
 - 主题控件只改变前端视觉主题，不改变练习队列、作答、错题、API 请求或后端数据。

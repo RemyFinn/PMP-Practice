@@ -252,7 +252,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
             </div>
             <div
               className={cn(
-                isSingleColumn && 'divide-y divide-ink-950/[0.035]',
+                isSingleColumn && 'grid gap-2 md:block md:divide-y md:divide-ink-950/[0.035]',
                 layoutMode === '2' && 'grid gap-2 lg:grid-cols-2',
                 layoutMode === '3' && 'grid gap-2 xl:grid-cols-3',
                 layoutMode === '4' && 'grid gap-2 xl:grid-cols-3 2xl:grid-cols-4',
@@ -266,7 +266,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                       'min-w-0 border border-transparent',
                       !isSingleColumn
                         ? 'grid gap-3 rounded-lg bg-ink-950/[0.018] p-3 transition hover:bg-ink-950/[0.028]'
-                        : 'grid gap-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start',
+                        : 'grid gap-3 rounded-lg bg-ink-950/[0.018] p-3 transition hover:bg-ink-950/[0.028] md:rounded-none md:bg-transparent md:px-0 md:py-3 md:hover:bg-transparent lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start',
                     )}
                   >
                     <div className="min-w-0">
