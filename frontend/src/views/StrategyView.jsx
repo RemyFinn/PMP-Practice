@@ -515,24 +515,17 @@ function QuestionPreviewDialog({
     const previousTop = style.top
     const previousWidth = style.width
     const previousOverflow = style.overflow
-    const previousPaddingRight = style.paddingRight
-    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth)
-    const currentPaddingRight = window.getComputedStyle(document.body).paddingRight
 
     style.position = 'fixed'
     style.top = `-${scrollY}px`
     style.width = '100%'
     style.overflow = 'hidden'
-    if (scrollbarWidth > 0) {
-      style.paddingRight = `calc(${currentPaddingRight} + ${scrollbarWidth}px)`
-    }
 
     return () => {
       style.position = previousPosition
       style.top = previousTop
       style.width = previousWidth
       style.overflow = previousOverflow
-      style.paddingRight = previousPaddingRight
       window.scrollTo(0, scrollY)
     }
   }, [isOpen])
