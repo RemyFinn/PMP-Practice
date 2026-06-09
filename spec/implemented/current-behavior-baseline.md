@@ -90,6 +90,7 @@ Issue-Class: public-contract
 - 重复 `(exam_id, number)` 等数据库异常返回 400，错误文本透出异常字符串。
 - `PATCH /api/questions/{id}` 只允许管理员。
 - 可修改 `exam_code`、题号、题干、是否多选、标准答案、解析、导入备注。
+- 后台新增或编辑解析时，会删除句子内部的不自然换行符；除该换行符外不改写文本内容，空行、列表/编号/选项行、句末标点后的换行等结构性换行保留。
 - 传入 `options` 时，现状是先删除该题全部选项，再插入新选项。
 - `DELETE /api/questions/{id}` 只允许管理员。
 - 删除是软删除：写 `questions.deleted_at` 和 `updated_at`，不会删除 attempts、wrong_items、options 或 strategy links。
@@ -109,12 +110,14 @@ Issue-Class: public-contract
 - 四套题分别为 `sim7/sim8/sim9/sim10`，每套要求 180 题。
 - `sim8` 使用 heading markdown 解析；其他套卷使用 bold-number markdown 解析。
 - Excel 必须有 `阅卷结果` sheet；表头支持若干别名。
+- Excel 导入解析时，会使用与后台新增/编辑相同的换行清理规则。
 - 导入会 upsert exams/questions/options，并把题目 `deleted_at` 置回 `NULL`。
 - 有导入用户答案时，会插入一次 `mode='imported_exam_result'` 的 attempt；同一用户同一题已有该 mode 时不再插入。
 - Excel 判定为 `错误` 时会 upsert wrong item；如果该 wrong item 已有 `learned_at`，导入不会重新激活。
 - `scripts/import_strategies.py` 读取硬编码 PDF 路径。
 - 策略导入前会删除全部 `strategy_question_links` 和 `strategies`，再重建。
 - `scripts/migrate_sqlite_to_postgres.py` 从 `data/pmp.sqlite` 迁移；用户相关表归属到导入 owner。
+- `scripts/normalize_explanations.py` 使用相同规则清理存量 `questions.explanation`，只更新规则判定需要删除不自然换行的题目。
 - `scripts/verify_api.py` 会访问运行中的服务，并创建用户、题目、attempt、wrong item，最后软删除临时题；它不是纯只读验证。
 
 ### 前端状态
@@ -152,6 +155,7 @@ Issue-Class: public-contract
 - 通用下拉选择器保持 Radix Select 官方结构；应用代码不包含 body padding 或 margin 滚动条补偿。
 - 思路页题目预览弹层由 Radix Dialog 管理背景滚动锁；应用代码不直接写入 body position、overflow、padding 或 margin 补偿。
 - 主题控件只改变前端视觉主题，不改变练习队列、作答、错题、API 请求或后端数据。
+- 新导入、后台新增和后台编辑解析时，会把 `达成一致\n意见`、`，\n并不必然` 这类句内不自然换行删除，且不改变换行前后的文字、空格或标点；存量解析可通过 `scripts/normalize_explanations.py` 使用同一规则清理。
 - 特征测试全绿：
 
 ```bash
@@ -174,6 +178,8 @@ PMP_TEST_DATABASE_URL='postgresql://pmp:pmp_password@127.0.0.1:5432/pmp_practice
 - API 验证脚本：[scripts/verify_api.py](../../scripts/verify_api.py)
 - 前端 API client：[frontend/src/api/client.js](../../frontend/src/api/client.js)
 - 前端根状态：[frontend/src/App.jsx](../../frontend/src/App.jsx)
+- 解析换行规范化：[app/utils.py](../../app/utils.py)
+- 存量解析清理脚本：[scripts/normalize_explanations.py](../../scripts/normalize_explanations.py)
 - 特征测试：[tests/feature/test_current_behavior_api.py](../../tests/feature/test_current_behavior_api.py)
 - 原始行为梳理：[docs/current-behavior-spec.md](../../docs/current-behavior-spec.md)
 

@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 
 from .auth import create_initial_admin, hash_password
 from .db import init_db, transaction
-from .utils import is_answer_correct, normalize_correct_answer
+from .utils import is_answer_correct, normalize_correct_answer, normalize_explanation_text
 
 
 SOURCE_DIR = Path("/Users/remy/Desktop/PMP学习")
@@ -177,7 +177,7 @@ def parse_excel(path: Path) -> dict[int, dict]:
             "correct_answer": normalize_correct_answer(ws.cell(row_idx, answer_col).value),
             "judgement": normalize_text(ws.cell(row_idx, judgement_col).value) if judgement_col else "",
             "note": "\n".join(part for part in note_parts if part),
-            "explanation": normalize_text(ws.cell(row_idx, explanation_col).value),
+            "explanation": normalize_explanation_text(normalize_text(ws.cell(row_idx, explanation_col).value)),
         }
     missing_numbers = [number for number in range(1, 181) if number not in rows]
     if missing_numbers:

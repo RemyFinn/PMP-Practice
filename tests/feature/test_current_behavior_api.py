@@ -430,12 +430,29 @@ class CurrentBehaviorApiFeatureTest(unittest.TestCase):
                 "stem": "Created stem",
                 "is_multi": True,
                 "correct_answer": "c,a",
-                "explanation": "Created explanation",
+                "explanation": (
+                    "达成一致\n"
+                    "意见，A 最好。C 的意思是鼓励双方一起承担、完成该任务，\n"
+                    "并不必然\n"
+                    "\n"
+                    "1. 保留列表\n"
+                    "下一句也保留"
+                ),
                 "options": [{"label": "a", "text": "Alpha"}, {"label": "c", "text": "Gamma"}],
             },
         )
         self.assertEqual(created.status_code, 200, created.text)
         self.assertEqual(created.json()["correct_answer"], "A、C")
+        self.assertEqual(
+            created.json()["explanation"],
+            (
+                "达成一致意见，A 最好。"
+                "C 的意思是鼓励双方一起承担、完成该任务，并不必然\n"
+                "\n"
+                "1. 保留列表\n"
+                "下一句也保留"
+            ),
+        )
         self.assertEqual([option["label"] for option in created.json()["options"]], ["A", "C"])
 
         duplicate = self.client.post(
@@ -469,6 +486,7 @@ class CurrentBehaviorApiFeatureTest(unittest.TestCase):
             f"/api/questions/{created.json()['id']}",
             json={
                 "correct_answer": "B",
+                "explanation": "一句完整。\n这是自然分段\nA. 选项行\n继续保留",
                 "options": [{"label": "B", "text": "Replacement"}],
                 "imported_note": "kept note",
             },
@@ -476,6 +494,7 @@ class CurrentBehaviorApiFeatureTest(unittest.TestCase):
         self.assertEqual(updated.status_code, 200, updated.text)
         # 现状：传 options 时先删光旧选项，再按 payload 重建。
         self.assertEqual(updated.json()["correct_answer"], "B")
+        self.assertEqual(updated.json()["explanation"], "一句完整。\n这是自然分段\nA. 选项行\n继续保留")
         self.assertEqual([(option["label"], option["text"]) for option in updated.json()["options"]], [("B", "Replacement")])
         self.assertEqual(updated.json()["imported_note"], "kept note")
 

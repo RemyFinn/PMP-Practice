@@ -27,6 +27,45 @@ def normalize_correct_answer(value: object) -> str:
     return normalize_answer(text)
 
 
+STRUCTURAL_EXPLANATION_LINE_RE = re.compile(
+    r"^\s*(?:[-*•]\s+|\d+[.)、]\s+|[A-F][.)、]\s+|[（(]?[一二三四五六七八九十]+[）)、]\s+)"
+)
+
+
+def is_structural_explanation_line(line: str) -> bool:
+    return bool(STRUCTURAL_EXPLANATION_LINE_RE.search(line))
+
+
+def should_remove_explanation_newline(previous_line: str, next_line: str) -> bool:
+    previous = previous_line.strip()
+    next_value = next_line.strip()
+    if not previous or not next_value:
+        return False
+    if is_structural_explanation_line(previous_line) or is_structural_explanation_line(next_line):
+        return False
+    if re.search(r"[:：。！？!?；;]\s*$", previous):
+        return False
+    if re.search(r"[:：]\s*$", next_value):
+        return False
+    return True
+
+
+def normalize_explanation_text(value: object) -> str:
+    text = "" if value is None else str(value)
+    parts = re.split(r"(\r\n|\r|\n)", text)
+    normalized: list[str] = []
+    for index in range(0, len(parts), 2):
+        line = parts[index]
+        normalized.append(line)
+        if index + 1 >= len(parts):
+            continue
+        separator = parts[index + 1]
+        next_line = parts[index + 2] if index + 2 < len(parts) else ""
+        if not should_remove_explanation_newline(line, next_line):
+            normalized.append(separator)
+    return "".join(normalized)
+
+
 def answer_sets(correct_answer: str) -> list[set[str]]:
     sets: list[set[str]] = []
     for part in correct_answer.upper().split("/"):

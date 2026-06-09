@@ -32,7 +32,7 @@ from .models import (
     WrongCountPatch,
     WrongItemPatch,
 )
-from .utils import is_answer_correct, normalize_answer, normalize_correct_answer
+from .utils import is_answer_correct, normalize_answer, normalize_correct_answer, normalize_explanation_text
 
 router = APIRouter(prefix="/api")
 
@@ -553,7 +553,7 @@ def create_question(payload: QuestionCreate, admin: dict = Depends(require_admin
                     payload.stem,
                     int(payload.is_multi),
                     normalize_correct_answer(payload.correct_answer),
-                    payload.explanation,
+                    normalize_explanation_text(payload.explanation),
                 ),
             )
         except Exception as exc:
@@ -586,7 +586,7 @@ def update_question(question_id: int, payload: QuestionUpdate, admin: dict = Dep
         params.append(normalize_correct_answer(payload.correct_answer))
     if payload.explanation is not None:
         fields.append("explanation = %s")
-        params.append(payload.explanation)
+        params.append(normalize_explanation_text(payload.explanation))
     if payload.imported_note is not None:
         fields.append("imported_note = %s")
         params.append(payload.imported_note)
