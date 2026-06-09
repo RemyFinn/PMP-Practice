@@ -7,13 +7,13 @@
 GitHub Wiki 通常是独立仓库，地址类似：
 
 ```text
-git@github.com:RemyFinn/pmp-practice-coach.wiki.git
+git@github.com:RemyFinn/PMP-Practice.wiki.git
 ```
 
 或：
 
 ```text
-https://github.com/RemyFinn/pmp-practice-coach.wiki.git
+https://github.com/RemyFinn/PMP-Practice.wiki.git
 ```
 
 ## 首次发布
@@ -22,9 +22,9 @@ https://github.com/RemyFinn/pmp-practice-coach.wiki.git
 
 ```bash
 cd /Users/remy/Desktop/PMP学习
-git clone git@github.com:RemyFinn/pmp-practice-coach.wiki.git
-cd pmp-practice-coach.wiki
-cp ../pmp-practice-coach/docs/wiki/*.md .
+git clone git@github.com:RemyFinn/PMP-Practice.wiki.git
+cd PMP-Practice.wiki
+cp ../PMP-Practice/docs/wiki/*.md .
 git add .
 git commit -m "docs: initialize project wiki"
 git push
@@ -33,8 +33,8 @@ git push
 ## 后续同步
 
 ```bash
-cd /Users/remy/Desktop/PMP学习/pmp-practice-coach.wiki
-cp ../pmp-practice-coach/docs/wiki/*.md .
+cd /Users/remy/Desktop/PMP学习/PMP-Practice.wiki
+cp ../PMP-Practice/docs/wiki/*.md .
 git add .
 git commit -m "docs: update wiki"
 git push

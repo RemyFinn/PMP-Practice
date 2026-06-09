@@ -35,7 +35,7 @@ PMP 做题系统是一套本地可运行、也可部署到服务器的刷题系�
 项目目录：
 
 ```bash
-/Users/remy/Desktop/PMP学习/pmp-practice-coach
+/Users/remy/Desktop/PMP学习/PMP-Practice
 ```
 
 本地访问地址：

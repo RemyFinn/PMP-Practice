@@ -12,7 +12,7 @@
 ## 首次运行
 
 ```bash
-cd /Users/remy/Desktop/PMP学习/pmp-practice-coach
+cd /Users/remy/Desktop/PMP学习/PMP-Practice
 chmod +x scripts/deploy_ecs.sh
 
 ECS_HOST=47.111.178.141 \

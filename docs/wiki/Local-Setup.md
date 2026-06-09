@@ -13,7 +13,7 @@
 ## 启动 PostgreSQL
 
 ```bash
-cd /Users/remy/Desktop/PMP学习/pmp-practice-coach
+cd /Users/remy/Desktop/PMP学习/PMP-Practice
 cp .env.example .env
 docker compose up -d postgres
 ```
