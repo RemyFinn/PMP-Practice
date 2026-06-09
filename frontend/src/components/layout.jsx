@@ -11,12 +11,14 @@ import {
   Layers3,
   ListChecks,
   LogOut,
+  Moon,
   RefreshCw,
+  Sun,
   Target,
   Users,
   XCircle,
 } from 'lucide-react'
-import { FONT_OPTIONS, THEME_OPTIONS } from '../constants'
+import { FONT_OPTIONS } from '../constants'
 import { cn } from '../lib/utils'
 import { Button, SelectControl } from './ui'
 
@@ -82,7 +84,8 @@ function Metric({ label, value, icon }) {
   )
 }
 
-export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, setThemeMode }) {
+export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, onToggleTheme }) {
+  const isDark = themeMode === 'dark'
   return (
     <header className="mx-auto mb-4 flex w-full max-w-6xl flex-wrap items-center justify-between gap-3">
       <div>
@@ -90,14 +93,15 @@ export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, s
         <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">练习</h2>
       </div>
       <div className="flex items-center gap-2">
-        <SelectControl
-          value={themeMode}
-          onValueChange={setThemeMode}
-          options={THEME_OPTIONS}
-          ariaLabel="选择界面主题"
-          prefix="主题"
-          triggerClassName="min-h-10 w-[112px] border-0 bg-paper-50/50 hover:bg-paper-50/70"
-        />
+        <Button
+          variant="icon"
+          className="size-10"
+          onClick={onToggleTheme}
+          aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
+          title={isDark ? '切换到浅色模式' : '切换到深色模式'}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </Button>
         <SelectControl
           value={fontMode}
           onValueChange={setFontMode}

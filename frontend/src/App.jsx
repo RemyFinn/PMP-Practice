@@ -45,7 +45,7 @@ export default function App() {
   })
   const [themeMode, setThemeMode] = useState(() => {
     const saved = localStorage.getItem('pmp-theme-mode')
-    return ['light', 'dark', 'system'].includes(saved) ? saved : 'light'
+    return saved === 'dark' ? 'dark' : 'light'
   })
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState(null)
@@ -182,21 +182,9 @@ export default function App() {
   }, [fontMode])
 
   useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
     const root = document.documentElement
-
-    function applyTheme() {
-      const resolvedTheme = themeMode === 'system' ? (media.matches ? 'dark' : 'light') : themeMode
-      root.dataset.theme = resolvedTheme
-      root.dataset.themeMode = themeMode
-      localStorage.setItem('pmp-theme-mode', themeMode)
-    }
-
-    applyTheme()
-    if (themeMode !== 'system') return undefined
-
-    media.addEventListener('change', applyTheme)
-    return () => media.removeEventListener('change', applyTheme)
+    root.dataset.theme = themeMode
+    localStorage.setItem('pmp-theme-mode', themeMode)
   }, [themeMode])
 
   if (!authChecked) {
@@ -230,7 +218,7 @@ export default function App() {
             fontMode={fontMode}
             setFontMode={setFontMode}
             themeMode={themeMode}
-            setThemeMode={setThemeMode}
+            onToggleTheme={() => setThemeMode((current) => (current === 'dark' ? 'light' : 'dark'))}
           />
           <NoticeViewport notice={notice} onClose={() => setNotice(null)} insetSidebar />
           <AnimatePresence mode="wait">
