@@ -38,6 +38,7 @@
 |---|---|---|
 | implemented | [current-behavior-baseline](./implemented/current-behavior-baseline.md) | 当前系统行为基线，来自代码只读梳理和特征测试 |
 | implemented | [strategy-multi-exam-filter](./implemented/strategy-multi-exam-filter.md) | 思路页支持多套卷筛选，并在多选时按分类合并展示 |
+| archived | [strategy-preview-dialog-scroll-lock-shift](./archived/strategy-preview-dialog-scroll-lock-shift.md) | 思路页题目预览弹层旧的滚动锁定位移行为 |
 
 ## Spec 模板
 

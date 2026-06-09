@@ -3,6 +3,33 @@
 @tailwind utilities;
 
 :root {
+  --white: 255 255 255;
+  --ink-950: 20 17 15;
+  --ink-900: 30 27 23;
+  --ink-800: 47 42 37;
+  --ink-700: 72 65 57;
+  --ink-600: 98 90 80;
+  --ink-500: 121 112 101;
+  --ink-400: 145 136 123;
+  --ink-300: 180 171 158;
+  --paper-50: 251 250 247;
+  --paper-100: 245 241 234;
+  --paper-200: 231 225 216;
+  --brass-600: 138 112 77;
+  --brass-100: 238 231 220;
+  --slateblue-700: 51 71 95;
+  --slateblue-500: 96 117 142;
+  --slateblue-100: 232 237 241;
+  --success-surface: 237 244 232;
+  --success-text: 73 106 69;
+  --success-border: 112 139 104;
+  --danger-surface: 245 231 227;
+  --danger-text: 142 73 64;
+  --danger-strong: 142 63 63;
+  --danger-border: 179 106 92;
+  --shadow-quiet: 0 18px 50px rgb(42 35 28 / 0.08);
+  --shadow-hairline: 0 1px 0 rgb(42 35 28 / 0.08);
+  color-scheme: light;
   --font-sans:
     "Avenir Next",
     "Fira Sans",
@@ -20,13 +47,43 @@
     ui-sans-serif,
     system-ui,
     sans-serif;
-  color: #14110f;
-  background: #fbfaf7;
+  color: rgb(var(--ink-950));
+  background: rgb(var(--paper-50));
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme="dark"] {
+  --white: 255 255 255;
+  --ink-950: 246 240 229;
+  --ink-900: 235 228 216;
+  --ink-800: 218 208 193;
+  --ink-700: 192 181 166;
+  --ink-600: 163 153 139;
+  --ink-500: 135 126 114;
+  --ink-400: 111 103 94;
+  --ink-300: 79 73 66;
+  --paper-50: 18 17 15;
+  --paper-100: 27 25 22;
+  --paper-200: 45 41 36;
+  --brass-600: 217 183 132;
+  --brass-100: 57 48 36;
+  --slateblue-700: 180 198 214;
+  --slateblue-500: 133 154 174;
+  --slateblue-100: 39 48 56;
+  --success-surface: 31 54 39;
+  --success-text: 181 221 170;
+  --success-border: 106 157 95;
+  --danger-surface: 67 37 34;
+  --danger-text: 239 177 164;
+  --danger-strong: 190 91 82;
+  --danger-border: 181 99 88;
+  --shadow-quiet: 0 18px 54px rgb(0 0 0 / 0.34);
+  --shadow-hairline: 0 1px 0 rgb(255 255 255 / 0.08);
+  color-scheme: dark;
 }
 
 html[data-font="system"] {
@@ -84,7 +141,7 @@ html {
   min-width: 320px;
   min-height: 100%;
   overflow-x: hidden;
-  background: #fbfaf7;
+  background: rgb(var(--paper-50));
 }
 
 body {
@@ -92,8 +149,8 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 8% 0%, rgba(138, 112, 77, 0.055), transparent 28%),
-    linear-gradient(180deg, #fbfaf7 0%, #f5f1ea 100%);
+    radial-gradient(circle at 8% 0%, rgb(var(--brass-600) / 0.075), transparent 28%),
+    linear-gradient(180deg, rgb(var(--paper-50)) 0%, rgb(var(--paper-100)) 100%);
 }
 
 button,
@@ -122,8 +179,8 @@ textarea {
 }
 
 ::selection {
-  color: #fbfaf7;
-  background: #2f2a25;
+  color: rgb(var(--paper-50));
+  background: rgb(var(--ink-800));
 }
 
 .skip-link {
@@ -133,13 +190,19 @@ textarea {
   z-index: 50;
   border-radius: 8px;
   padding: 10px 14px;
-  color: #fbfaf7;
-  background: #14110f;
+  color: rgb(var(--paper-50));
+  background: rgb(var(--ink-950));
   transition: top 160ms ease;
 }
 
 .skip-link:focus {
   top: 16px;
+}
+
+.sidebar-shell {
+  background:
+    radial-gradient(circle at 30% 0%, rgb(var(--brass-600) / 0.08), transparent 34%),
+    linear-gradient(180deg, rgb(var(--paper-50) / 0.68), rgb(var(--paper-100) / 0.52));
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,7 +5,7 @@ import { Badge, Screen, panelClass } from '../components/ui'
 export function HomeView({ exams, totals, onStart }) {
   return (
     <Screen className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-      <section className={panelClass('bg-white/58 p-4 sm:p-5')}>
+      <section className={panelClass('bg-paper-50/58 p-4 sm:p-5')}>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">选择练习</h2>

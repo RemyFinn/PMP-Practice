@@ -43,6 +43,10 @@ export default function App() {
     const saved = localStorage.getItem('pmp-font-mode')
     return saved === 'system' ? 'system' : 'default'
   })
+  const [themeMode, setThemeMode] = useState(() => {
+    const saved = localStorage.getItem('pmp-theme-mode')
+    return ['light', 'dark', 'system'].includes(saved) ? saved : 'light'
+  })
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState(null)
   const [user, setUser] = useState(null)
@@ -177,6 +181,24 @@ export default function App() {
     localStorage.setItem('pmp-font-mode', fontMode)
   }, [fontMode])
 
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const root = document.documentElement
+
+    function applyTheme() {
+      const resolvedTheme = themeMode === 'system' ? (media.matches ? 'dark' : 'light') : themeMode
+      root.dataset.theme = resolvedTheme
+      root.dataset.themeMode = themeMode
+      localStorage.setItem('pmp-theme-mode', themeMode)
+    }
+
+    applyTheme()
+    if (themeMode !== 'system') return undefined
+
+    media.addEventListener('change', applyTheme)
+    return () => media.removeEventListener('change', applyTheme)
+  }, [themeMode])
+
   if (!authChecked) {
     return <div className="grid min-h-dvh place-items-center bg-paper-50 text-sm font-medium text-ink-400">正在加载...</div>
   }
@@ -202,7 +224,14 @@ export default function App() {
       <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[236px_minmax(0,1fr)]">
         <Sidebar view={view || 'home'} totals={totals} user={user} onLogout={logout} />
         <main id="main" className="min-w-0 px-4 py-4 sm:px-6 lg:px-8">
-          <TopBar onRefresh={refreshEverything} loading={loading} fontMode={fontMode} setFontMode={setFontMode} />
+          <TopBar
+            onRefresh={refreshEverything}
+            loading={loading}
+            fontMode={fontMode}
+            setFontMode={setFontMode}
+            themeMode={themeMode}
+            setThemeMode={setThemeMode}
+          />
           <NoticeViewport notice={notice} onClose={() => setNotice(null)} insetSidebar />
           <AnimatePresence mode="wait">
             {!view && <Navigate key="not-found" to="/" replace />}

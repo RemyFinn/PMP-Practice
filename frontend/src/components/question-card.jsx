@@ -48,7 +48,7 @@ export function QuestionCard({
     <motion.article
       key={question.id}
       className={cn(
-        isDialog ? 'bg-transparent p-0' : 'rounded-2xl bg-white/72 px-4 py-4 shadow-quiet sm:px-6 sm:py-5',
+        isDialog ? 'bg-transparent p-0' : 'rounded-2xl bg-paper-50/72 px-4 py-4 shadow-quiet sm:px-6 sm:py-5',
         !isDialog && PANEL_RING,
         className,
       )}
@@ -186,7 +186,7 @@ function StrategyPanel({ strategies, highlightedStrategyMatches }) {
             key={strategy.id}
             className={cn(
               'leading-6 underline-offset-4',
-              isHighlighted && 'text-ink-950 underline decoration-brass-600 decoration-2',
+              isHighlighted && 'text-ink-950 underline decoration-brass-600 decoration-[0.75px]',
             )}
           >
             <span className="font-semibold">{strategy.category}：</span>
@@ -217,8 +217,8 @@ export function ResultPanel({ result }) {
       className={cn(
         'mt-5 rounded-xl border p-4',
         result.is_correct
-          ? 'border-[#708b68]/[0.12] bg-[#edf4e8] text-[#314b2f]'
-          : 'border-[#b36a5c]/[0.12] bg-[#f5e7e3] text-[#733c35]',
+          ? 'border-success-border/20 bg-success-surface text-success-text'
+          : 'border-danger-border/20 bg-danger-surface text-danger-text',
       )}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -240,7 +240,7 @@ export function ResultPanel({ result }) {
           <div
             className={cn(
               'inline-flex h-7 items-center rounded-md px-2 font-latin text-sm font-semibold leading-none tabular-nums',
-              result.is_correct ? 'bg-white/20 text-current' : 'bg-white/52 text-[#314b2f] ring-1 ring-[#708b68]/[0.13]',
+              result.is_correct ? 'bg-white/20 text-current' : 'bg-paper-50/52 text-success-text ring-1 ring-success-border/25',
             )}
           >
             {result.correct_answer}

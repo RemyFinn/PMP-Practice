@@ -10,3 +10,8 @@ export const FONT_OPTIONS = [
   { value: 'default', label: '默认' },
   { value: 'system', label: '粗体' },
 ]
+export const THEME_OPTIONS = [
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '深色' },
+  { value: 'system', label: '系统' },
+]

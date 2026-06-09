@@ -50,7 +50,7 @@ export function PracticeView({
 
   return (
     <Screen className="pb-14">
-      <div className={panelClass('mb-4 bg-white/54 p-3 shadow-hairline')}>
+      <div className={panelClass('mb-4 bg-paper-50/54 p-3 shadow-hairline')}>
         <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onBack}>

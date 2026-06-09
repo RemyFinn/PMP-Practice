@@ -116,8 +116,8 @@ export function AdminView({ exams, reloadExams, notify, run }) {
               <button
                 key={question.id}
                 className={cn(
-                  'rounded-lg border border-transparent bg-paper-50/72 px-3 py-2.5 text-left transition hover:border-ink-950/[0.055] hover:bg-white',
-                  selectedId === question.id && 'border-ink-950/[0.1] bg-white shadow-hairline',
+                  'rounded-lg border border-transparent bg-paper-50/72 px-3 py-2.5 text-left transition hover:border-ink-950/[0.055] hover:bg-paper-100',
+                  selectedId === question.id && 'border-ink-950/[0.1] bg-paper-100 shadow-hairline',
                 )}
                 onClick={() => setSelectedId(question.id)}
               >

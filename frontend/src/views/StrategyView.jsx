@@ -216,7 +216,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                   type="button"
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded px-2.5 text-xs font-semibold leading-none transition',
-                    layoutMode === item.value ? 'bg-white text-ink-950 shadow-hairline' : 'text-ink-500 hover:text-ink-950',
+                    layoutMode === item.value ? 'bg-paper-50 text-ink-950 shadow-hairline' : 'text-ink-500 hover:text-ink-950',
                   )}
                   onClick={() => setLayoutMode(item.value)}
                   aria-pressed={layoutMode === item.value}
@@ -301,7 +301,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
                                   className={cn(
                                     'inline-flex h-7 items-center px-2 font-latin text-xs font-semibold leading-none tabular-nums transition',
                                     question.is_wrong_active
-                                      ? 'bg-[#f0dfdc] text-[#8e4940] hover:bg-[#8e4940] hover:text-white'
+                                      ? 'bg-danger-surface text-danger-text hover:bg-danger-strong hover:text-white'
                                       : 'bg-ink-950/[0.045] text-ink-700 hover:bg-ink-950 hover:text-paper-50',
                                   )}
                                   title={question.is_wrong_active ? `错题｜${question.stem}` : question.stem}
@@ -403,8 +403,8 @@ function ExamFilterControl({ exams, value, onChange }) {
       <button
         type="button"
         className={cn(
-          'flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-ink-950/[0.055] bg-white/68 px-3 text-left text-sm font-semibold leading-none text-ink-950 outline-none transition hover:bg-white focus-visible:border-ink-950/[0.13] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-ink-950/[0.025]',
-          open && 'border-ink-950/[0.13] bg-white',
+          'flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-ink-950/[0.055] bg-paper-50/68 px-3 text-left text-sm font-semibold leading-none text-ink-950 outline-none transition hover:bg-paper-100 focus-visible:border-ink-950/[0.13] focus-visible:bg-paper-50 focus-visible:ring-2 focus-visible:ring-ink-950/[0.025]',
+          open && 'border-ink-950/[0.13] bg-paper-50',
         )}
         aria-labelledby="strategy-exam-filter-label"
         aria-haspopup="listbox"
@@ -418,7 +418,7 @@ function ExamFilterControl({ exams, value, onChange }) {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-lg border border-ink-950/[0.055] bg-paper-50/95 p-1 text-sm text-ink-900 shadow-[0_10px_24px_rgba(42,35,28,0.07)] backdrop-blur-xl"
+            className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-lg border border-ink-950/[0.055] bg-paper-50/95 p-1 text-sm text-ink-900 shadow-quiet backdrop-blur-xl"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -515,17 +515,24 @@ function QuestionPreviewDialog({
     const previousTop = style.top
     const previousWidth = style.width
     const previousOverflow = style.overflow
+    const previousPaddingRight = style.paddingRight
+    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth)
+    const currentPaddingRight = window.getComputedStyle(document.body).paddingRight
 
     style.position = 'fixed'
     style.top = `-${scrollY}px`
     style.width = '100%'
     style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      style.paddingRight = `calc(${currentPaddingRight} + ${scrollbarWidth}px)`
+    }
 
     return () => {
       style.position = previousPosition
       style.top = previousTop
       style.width = previousWidth
       style.overflow = previousOverflow
+      style.paddingRight = previousPaddingRight
       window.scrollTo(0, scrollY)
     }
   }, [isOpen])
@@ -545,7 +552,7 @@ function QuestionPreviewDialog({
           onMouseDown={onClose}
         >
           <motion.div
-            className="flex max-h-[86dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-paper-50 shadow-[0_28px_80px_rgba(42,35,28,0.18)] ring-1 ring-ink-950/[0.06]"
+            className="flex max-h-[86dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-paper-50 shadow-quiet ring-1 ring-ink-950/[0.06]"
             initial={{ opacity: 0, y: 12, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.985 }}
