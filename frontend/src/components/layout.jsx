@@ -19,7 +19,12 @@ import {
   XCircle,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { Button, SwitchControl } from './ui'
+import { Button, SegmentedControl } from './ui'
+
+const FONT_MODE_OPTIONS = [
+  { value: 'default', label: '默认' },
+  { value: 'system', label: '粗体' },
+]
 
 export function Sidebar({ view, totals, user, onLogout }) {
   const isAdmin = user?.role === 'admin'
@@ -101,12 +106,11 @@ export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, o
         >
           {isDark ? <Sun size={16} /> : <Moon size={16} />}
         </Button>
-        <SwitchControl
-          checked={fontMode === 'system'}
-          onCheckedChange={(checked) => setFontMode(checked ? 'system' : 'default')}
+        <SegmentedControl
+          value={fontMode}
+          onValueChange={setFontMode}
+          options={FONT_MODE_OPTIONS}
           label="字体"
-          checkedLabel="系统"
-          uncheckedLabel="默认"
           ariaLabel="切换界面字体"
         />
         <Button variant="ghost" onClick={onRefresh} disabled={loading}>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, Columns2, Columns3, Columns4, List, Search, X } from 'lucide-react'
 import { api } from '../api/client'
@@ -39,15 +40,6 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
   useEffect(() => {
     localStorage.setItem('pmp-strategy-layout', layoutMode)
   }, [layoutMode])
-
-  useEffect(() => {
-    if (!previewQuestion) return undefined
-    function closeOnEscape(event) {
-      if (event.key === 'Escape') closePreview()
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [previewQuestion])
 
   function closePreview() {
     setPreviewQuestion(null)
@@ -507,106 +499,91 @@ function QuestionPreviewDialog({
   const [confirmLearned, setConfirmLearned] = useState(false)
 
   useEffect(() => {
-    if (!isOpen) return undefined
-
-    const scrollY = window.scrollY
-    const { style } = document.body
-    const previousPosition = style.position
-    const previousTop = style.top
-    const previousWidth = style.width
-    const previousOverflow = style.overflow
-
-    style.position = 'fixed'
-    style.top = `-${scrollY}px`
-    style.width = '100%'
-    style.overflow = 'hidden'
-
-    return () => {
-      style.position = previousPosition
-      style.top = previousTop
-      style.width = previousWidth
-      style.overflow = previousOverflow
-      window.scrollTo(0, scrollY)
-    }
-  }, [isOpen])
-
-  useEffect(() => {
     setConfirmLearned(false)
   }, [question?.id, question?.is_wrong_active])
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink-950/18 px-3 py-5 backdrop-blur-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onMouseDown={onClose}
-        >
-          <motion.div
-            className="flex max-h-[86dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-paper-50 shadow-quiet ring-1 ring-ink-950/[0.06]"
-            initial={{ opacity: 0, y: 12, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.985 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            onMouseDown={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label="题目练习"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-ink-950/[0.04] px-4 py-3">
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <Badge tone={question ? 'blue' : 'neutral'}>{question ? '题目练习' : '加载中'}</Badge>
-                {result && <Badge tone={result.is_correct ? 'success' : 'danger'}>{result.is_correct ? '已答对' : '已答错'}</Badge>}
-              </div>
-              <Button variant="icon" className="size-8" onClick={onClose} aria-label="关闭预览">
-                <X size={16} />
-              </Button>
-            </div>
+    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <AnimatePresence>
+        {isOpen && (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay forceMount asChild>
+              <motion.div
+                className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink-950/18 px-3 py-5 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <Dialog.Content forceMount asChild>
+                  <motion.div
+                    className="flex max-h-[86dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-paper-50 shadow-quiet outline-none ring-1 ring-ink-950/[0.06]"
+                    initial={{ opacity: 0, y: 12, scale: 0.985 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.985 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                  >
+                    <Dialog.Title className="sr-only">题目练习</Dialog.Title>
+                    <Dialog.Description className="sr-only">在思路页预览并练习题目</Dialog.Description>
+                    <div className="flex items-center justify-between gap-3 border-b border-ink-950/[0.04] px-4 py-3">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <Badge tone={question ? 'blue' : 'neutral'}>{question ? '题目练习' : '加载中'}</Badge>
+                        {result && <Badge tone={result.is_correct ? 'success' : 'danger'}>{result.is_correct ? '已答对' : '已答错'}</Badge>}
+                      </div>
+                      <Dialog.Close asChild>
+                        <Button variant="icon" className="size-8" aria-label="关闭预览">
+                          <X size={16} />
+                        </Button>
+                      </Dialog.Close>
+                    </div>
 
-            <div className="min-h-0 overflow-y-auto px-5 py-4 sm:px-6">
-              {!question && <div className="py-12 text-center text-sm font-medium text-ink-400">正在加载题目...</div>}
+                    <div className="min-h-0 overflow-y-auto px-5 py-4 sm:px-6">
+                      {!question && <div className="py-12 text-center text-sm font-medium text-ink-400">正在加载题目...</div>}
 
-              {question && (
-                <QuestionCard
-                  question={question}
-                  result={result}
-                  onSubmit={onSubmit}
-                  variant="dialog"
-                  highlightedStrategyMatches={highlightedStrategyMatches}
-                />
-              )}
-            </div>
+                      {question && (
+                        <QuestionCard
+                          question={question}
+                          result={result}
+                          onSubmit={onSubmit}
+                          variant="dialog"
+                          highlightedStrategyMatches={highlightedStrategyMatches}
+                        />
+                      )}
+                    </div>
 
-            <div className="flex flex-wrap justify-end gap-2 border-t border-ink-950/[0.04] px-5 py-3 sm:px-6">
-              {question?.is_wrong_active && !confirmLearned && (
-                <Button variant="ghost" onClick={() => setConfirmLearned(true)}>
-                  <CheckCircle2 size={16} />
-                  学会了
-                </Button>
-              )}
-              {question?.is_wrong_active && confirmLearned && (
-                <>
-                  <Button variant="ghost" onClick={() => setConfirmLearned(false)}>
-                    取消
-                  </Button>
-                  <Button variant="danger" onClick={() => onMarkLearned(question)}>
-                    <CheckCircle2 size={16} />
-                    确认移出错题
-                  </Button>
-                </>
-              )}
-              <Button variant="ghost" onClick={onClose}>关闭</Button>
-              <Button variant="primary" onClick={onPractice} disabled={!question}>
-                <ArrowRight size={16} />
-                进入做题
-              </Button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+                    <div className="flex flex-wrap justify-end gap-2 border-t border-ink-950/[0.04] px-5 py-3 sm:px-6">
+                      {question?.is_wrong_active && !confirmLearned && (
+                        <Button variant="ghost" onClick={() => setConfirmLearned(true)}>
+                          <CheckCircle2 size={16} />
+                          学会了
+                        </Button>
+                      )}
+                      {question?.is_wrong_active && confirmLearned && (
+                        <>
+                          <Button variant="ghost" onClick={() => setConfirmLearned(false)}>
+                            取消
+                          </Button>
+                          <Button variant="danger" onClick={() => onMarkLearned(question)}>
+                            <CheckCircle2 size={16} />
+                            确认移出错题
+                          </Button>
+                        </>
+                      )}
+                      <Dialog.Close asChild>
+                        <Button variant="ghost">关闭</Button>
+                      </Dialog.Close>
+                      <Button variant="primary" onClick={onPractice} disabled={!question}>
+                        <ArrowRight size={16} />
+                        进入做题
+                      </Button>
+                    </div>
+                  </motion.div>
+                </Dialog.Content>
+              </motion.div>
+            </Dialog.Overlay>
+          </Dialog.Portal>
+        )}
+      </AnimatePresence>
+    </Dialog.Root>
   )
 }
 

@@ -1,6 +1,5 @@
 import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Select from '@radix-ui/react-select'
-import * as Switch from '@radix-ui/react-switch'
 import { cva } from 'class-variance-authority'
 import { motion } from 'framer-motion'
 import { Check, ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react'
@@ -153,19 +152,33 @@ export function SelectControl({ value, onValueChange, options, ariaLabel, placeh
   )
 }
 
-export function SwitchControl({ checked, onCheckedChange, label, checkedLabel, uncheckedLabel, ariaLabel, className }) {
+export function SegmentedControl({ value, onValueChange, options, label, ariaLabel, className }) {
   return (
-    <div className={cn('inline-flex min-h-10 items-center gap-2 rounded-full bg-paper-50/50 px-3 text-sm font-semibold text-ink-700', className)}>
+    <div
+      className={cn('inline-flex min-h-10 items-center gap-1.5 rounded-full bg-paper-50/50 p-1 text-sm font-semibold text-ink-700', className)}
+      role="group"
+      aria-label={ariaLabel}
+    >
       {label && <span className="leading-none text-ink-600">{label}</span>}
-      <Switch.Root
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        aria-label={ariaLabel}
-        className="relative h-5 w-9 shrink-0 rounded-full bg-ink-950/[0.12] outline-none transition focus-visible:ring-2 focus-visible:ring-ink-800/15 data-[state=checked]:bg-ink-950"
-      >
-        <Switch.Thumb className="block size-4 translate-x-0.5 rounded-full bg-paper-50 shadow-hairline transition-transform data-[state=checked]:translate-x-[18px]" />
-      </Switch.Root>
-      <span className="min-w-[2.5rem] leading-none text-ink-950">{checked ? checkedLabel : uncheckedLabel}</span>
+      <div className="inline-grid grid-cols-2 rounded-full bg-ink-950/[0.055] p-0.5">
+        {options.map((option) => {
+          const active = option.value === value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onValueChange(option.value)}
+              className={cn(
+                'min-h-8 min-w-12 rounded-full px-3 text-sm leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15',
+                active ? 'bg-ink-950 text-paper-50 shadow-hairline' : 'text-ink-600 hover:bg-paper-50/70 hover:text-ink-950',
+              )}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
