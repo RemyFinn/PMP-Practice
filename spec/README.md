@@ -38,7 +38,6 @@
 |---|---|---|
 | implemented | [current-behavior-baseline](./implemented/current-behavior-baseline.md) | 当前系统行为基线，来自代码只读梳理和特征测试 |
 | implemented | [strategy-multi-exam-filter](./implemented/strategy-multi-exam-filter.md) | 思路页支持多套卷筛选，并在多选时按分类合并展示 |
-| archived | [radix-select-scroll-lock](./archived/radix-select-scroll-lock.md) | 通用下拉选择器旧的 Radix Select 滚动锁定行为 |
 
 ## Spec 模板
 

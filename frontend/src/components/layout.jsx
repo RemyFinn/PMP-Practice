@@ -18,9 +18,8 @@ import {
   Users,
   XCircle,
 } from 'lucide-react'
-import { FONT_OPTIONS } from '../constants'
 import { cn } from '../lib/utils'
-import { Button, SelectControl } from './ui'
+import { Button, SwitchControl } from './ui'
 
 export function Sidebar({ view, totals, user, onLogout }) {
   const isAdmin = user?.role === 'admin'
@@ -102,13 +101,13 @@ export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, o
         >
           {isDark ? <Sun size={16} /> : <Moon size={16} />}
         </Button>
-        <SelectControl
-          value={fontMode}
-          onValueChange={setFontMode}
-          options={FONT_OPTIONS}
-          ariaLabel="选择界面字体"
-          prefix="字体"
-          triggerClassName="min-h-10 w-[128px] border-0 bg-paper-50/50 hover:bg-paper-50/70"
+        <SwitchControl
+          checked={fontMode === 'system'}
+          onCheckedChange={(checked) => setFontMode(checked ? 'system' : 'default')}
+          label="字体"
+          checkedLabel="系统"
+          uncheckedLabel="默认"
+          ariaLabel="切换界面字体"
         />
         <Button variant="ghost" onClick={onRefresh} disabled={loading}>
           <RefreshCw size={16} className={cn(loading && 'animate-spin')} />

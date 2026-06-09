@@ -115,7 +115,8 @@
 - 字体模式保存在 `localStorage.pmp-font-mode`。
 - 主题模式保存在 `localStorage.pmp-theme-mode`；未保存时默认浅色，顶栏图标按钮在浅色和深色之间切换。
 - 策略布局保存在 `localStorage.pmp-strategy-layout`。
-- 通用下拉选择器使用 Radix DropdownMenu 的非 modal 菜单实现；展开选项时不设置 `body[data-scroll-locked]`，不改写 `body` 的 padding 或 margin。
+- 字体模式通过顶栏 Switch 在默认字体和系统字体之间切换。
+- 通用下拉选择器使用 Radix Select 官方结构，包含滚动按钮、Viewport、ItemText 和 ItemIndicator；前端不手写 body padding 或 margin 补偿。
 - 思路页套卷筛选是 React 内存态下拉多选；选择多个套卷时，思路按分类分组，同一分类下标题一致的思路合并为一张卡片，并在卡片内按套卷展示题号。
 - 思路页从某个外层思路卡片点开题目预览后，弹层内展开解题思路时，与来源卡片对应的解题思路文本以 React 内存态细下划线高亮。
 - 思路页题目预览提交后会把返回的错题状态同步到外层题号；外层错题题号突出显示，弹层内可二次确认标记学会以移出错题集。

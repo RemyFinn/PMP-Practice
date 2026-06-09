@@ -1,8 +1,9 @@
 import * as Checkbox from '@radix-ui/react-checkbox'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import * as Select from '@radix-ui/react-select'
+import * as Switch from '@radix-ui/react-switch'
 import { cva } from 'class-variance-authority'
 import { motion } from 'framer-motion'
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react'
 import { OPTION_LABELS } from '../constants'
 import { cn } from '../lib/utils'
 import { letters } from '../utils/format'
@@ -94,58 +95,78 @@ function TogglePillButton({ children, active, className, ...props }) {
 }
 
 export function SelectControl({ value, onValueChange, options, ariaLabel, placeholder = '请选择', prefix, className, triggerClassName }) {
-  const selected = options.find((option) => option.value === value)
   return (
-    <DropdownMenu.Root modal={false}>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
+    <Select.Root value={value} onValueChange={onValueChange}>
+      <Select.Trigger
+        className={cn(
+          FIELD_BASE,
+          'inline-flex min-h-11 w-full items-center justify-between gap-2 px-3 text-sm font-semibold leading-none text-ink-950 hover:bg-paper-100 data-[placeholder]:text-ink-400',
+          triggerClassName,
+        )}
+        aria-label={ariaLabel}
+      >
+        {prefix ? (
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="shrink-0 text-ink-600">{prefix}</div>
+            <Select.Value placeholder={placeholder} />
+          </div>
+        ) : (
+          <Select.Value placeholder={placeholder} />
+        )}
+        <Select.Icon className="grid size-4 shrink-0 place-items-center text-ink-400">
+          <ChevronDown size={15} />
+        </Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content
           className={cn(
-            FIELD_BASE,
-            'inline-flex min-h-11 w-full items-center justify-between gap-2 px-3 text-sm font-semibold leading-none text-ink-950 hover:bg-paper-100',
-            triggerClassName,
-          )}
-          aria-label={ariaLabel}
-        >
-          {prefix ? (
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="shrink-0 text-ink-600">{prefix}</div>
-              <span className={cn('truncate', !selected && 'text-ink-400')}>{selected?.label || placeholder}</span>
-            </div>
-          ) : (
-            <span className={cn('truncate', !selected && 'text-ink-400')}>{selected?.label || placeholder}</span>
-          )}
-          <span className="grid size-4 shrink-0 place-items-center text-ink-400">
-            <ChevronDown size={15} />
-          </span>
-        </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className={cn(
-            'z-50 max-h-72 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto rounded-lg border border-ink-950/[0.055] bg-paper-50/95 p-1 text-sm text-ink-900 shadow-quiet backdrop-blur-xl',
+            'z-50 max-h-72 w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border border-ink-950/[0.055] bg-paper-50/95 p-1 text-sm text-ink-900 shadow-quiet backdrop-blur-xl',
             className,
           )}
+          position="popper"
           align="start"
           sideOffset={6}
         >
-          <DropdownMenu.RadioGroup value={value} onValueChange={onValueChange}>
+          <Select.ScrollUpButton className="grid h-7 cursor-default place-items-center rounded-md text-ink-400">
+            <ChevronUp size={15} />
+          </Select.ScrollUpButton>
+          <Select.Viewport className="max-h-64 overflow-y-auto">
             {options.map((option) => (
-              <DropdownMenu.RadioItem
+              <Select.Item
                 key={option.value}
                 value={option.value}
                 className="relative flex min-h-9 cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-3 font-medium outline-none transition data-[highlighted]:bg-ink-950/[0.055] data-[highlighted]:text-ink-950"
               >
-                <DropdownMenu.ItemIndicator className="absolute left-2 grid size-4 place-items-center text-ink-800">
+                <Select.ItemIndicator className="absolute left-2 grid size-4 place-items-center text-ink-800">
                   <Check size={14} />
-                </DropdownMenu.ItemIndicator>
-                <span>{option.label}</span>
-              </DropdownMenu.RadioItem>
+                </Select.ItemIndicator>
+                <Select.ItemText>{option.label}</Select.ItemText>
+              </Select.Item>
             ))}
-          </DropdownMenu.RadioGroup>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+          </Select.Viewport>
+          <Select.ScrollDownButton className="grid h-7 cursor-default place-items-center rounded-md text-ink-400">
+            <ChevronDown size={15} />
+          </Select.ScrollDownButton>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  )
+}
+
+export function SwitchControl({ checked, onCheckedChange, label, checkedLabel, uncheckedLabel, ariaLabel, className }) {
+  return (
+    <div className={cn('inline-flex min-h-10 items-center gap-2 rounded-full bg-paper-50/50 px-3 text-sm font-semibold text-ink-700', className)}>
+      {label && <span className="leading-none text-ink-600">{label}</span>}
+      <Switch.Root
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        aria-label={ariaLabel}
+        className="relative h-5 w-9 shrink-0 rounded-full bg-ink-950/[0.12] outline-none transition focus-visible:ring-2 focus-visible:ring-ink-800/15 data-[state=checked]:bg-ink-950"
+      >
+        <Switch.Thumb className="block size-4 translate-x-0.5 rounded-full bg-paper-50 shadow-hairline transition-transform data-[state=checked]:translate-x-[18px]" />
+      </Switch.Root>
+      <span className="min-w-[2.5rem] leading-none text-ink-950">{checked ? checkedLabel : uncheckedLabel}</span>
+    </div>
   )
 }
 

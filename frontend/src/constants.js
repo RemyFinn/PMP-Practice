@@ -6,7 +6,3 @@ export const EXAM_LABELS = {
   sim10: '模拟十',
 }
 export const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F']
-export const FONT_OPTIONS = [
-  { value: 'default', label: '默认' },
-  { value: 'system', label: '粗体' },
-]
