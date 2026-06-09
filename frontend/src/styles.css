@@ -30,9 +30,34 @@
   --shadow-quiet: 0 18px 50px rgb(42 35 28 / 0.08);
   --shadow-hairline: 0 1px 0 rgb(42 35 28 / 0.08);
   color-scheme: light;
-  --font-sans: Georgia, "Songti SC", STSong, serif;
-  --font-serif: Georgia, "Songti SC", STSong, serif;
-  --font-latin: Georgia, "Songti SC", STSong, serif;
+  --font-sans:
+    "Avenir Next",
+    "SF Pro Text",
+    "Segoe UI",
+    "Hiragino Sans GB",
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  --font-serif:
+    "Iowan Old Style",
+    "Palatino Linotype",
+    "Book Antiqua",
+    Georgia,
+    "Hiragino Mincho ProN",
+    "Songti SC",
+    "Noto Serif CJK SC",
+    "Source Han Serif SC",
+    STSong,
+    serif;
+  --font-latin:
+    "Avenir Next",
+    "SF Pro Text",
+    "Segoe UI",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   color: rgb(var(--ink-950));
   background: rgb(var(--paper-50));
   font-family: var(--font-sans);
@@ -100,9 +125,34 @@ html[data-font="bold"] {
 }
 
 html[data-font="default"] {
-  --font-sans: Georgia, "Songti SC", STSong, serif;
-  --font-serif: Georgia, "Songti SC", STSong, serif;
-  --font-latin: Georgia, "Songti SC", STSong, serif;
+  --font-sans:
+    "Avenir Next",
+    "SF Pro Text",
+    "Segoe UI",
+    "Hiragino Sans GB",
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  --font-serif:
+    "Iowan Old Style",
+    "Palatino Linotype",
+    "Book Antiqua",
+    Georgia,
+    "Hiragino Mincho ProN",
+    "Songti SC",
+    "Noto Serif CJK SC",
+    "Source Han Serif SC",
+    STSong,
+    serif;
+  --font-latin:
+    "Avenir Next",
+    "SF Pro Text",
+    "Segoe UI",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
 }
 
 html[data-font="bold"] .question-stem {
