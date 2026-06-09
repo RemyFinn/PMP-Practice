@@ -374,7 +374,7 @@ export function StrategyView({ exams, notify, run, reloadExams, onOpenQuestion }
 function MarkerEffectControl({ value, onChange }) {
   return (
     <div
-      className="inline-flex h-9 items-center gap-1 rounded-md bg-ink-950/[0.045] p-1"
+      className="flex flex-wrap items-center gap-1 rounded-md bg-ink-950/[0.045] p-1"
       role="group"
       aria-label="选择题号标记效果"
     >
@@ -382,14 +382,17 @@ function MarkerEffectControl({ value, onChange }) {
         <button
           key={effect.value}
           type="button"
-          className="strategy-question-button inline-flex h-7 min-w-8 items-center justify-center rounded-md px-2 font-latin text-xs font-semibold leading-none tabular-nums transition"
+          className="strategy-question-button strategy-marker-swatch inline-flex h-8 min-w-[58px] items-center justify-center rounded-md px-2.5 text-xs font-semibold leading-none transition"
           data-last-previewed="true"
           data-marker-effect={effect.value}
           aria-pressed={value === effect.value}
-          title={effect.label}
+          title={`${index + 1} ${effect.label}`}
           onClick={() => onChange(effect.value)}
         >
-          <span className="relative z-10">{index + 1}</span>
+          <span className="relative z-10 inline-flex items-center gap-1.5">
+            <span className="font-latin tabular-nums">{index + 1}</span>
+            <span>{effect.label}</span>
+          </span>
         </button>
       ))}
     </div>

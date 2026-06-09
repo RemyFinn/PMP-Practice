@@ -157,6 +157,10 @@ html[data-font="bold"] .question-stem {
   transform: translateY(-1px);
 }
 
+.strategy-marker-swatch {
+  letter-spacing: 0;
+}
+
 .strategy-question-button[data-last-previewed="true"]::before {
   opacity: 0.72;
 }
@@ -242,24 +246,25 @@ html[data-font="bold"] .question-stem {
 }
 
 .strategy-question-button[data-last-previewed="true"][data-marker-effect="gleam"]::before {
-  opacity: 0.38;
+  opacity: 0.46;
 }
 
 .strategy-question-button[data-last-previewed="true"][data-marker-effect="gleam"]::after {
+  inset: 0 -72%;
   background:
     linear-gradient(
       105deg,
       transparent 0%,
-      transparent 24%,
-      rgb(var(--white) / 0.58) 42%,
-      rgb(var(--brass-600) / 0.18) 50%,
-      rgb(var(--slateblue-100) / 0.34) 57%,
-      transparent 76%,
+      transparent 34%,
+      rgb(var(--white) / 0.72) 45%,
+      rgb(var(--brass-100) / 0.58) 50%,
+      rgb(var(--slateblue-100) / 0.58) 56%,
+      rgb(var(--white) / 0.4) 62%,
+      transparent 72%,
       transparent 100%
     );
-  background-size: 260% 100%;
-  opacity: 0.78;
-  transform: translateX(-35%);
+  opacity: 0.92;
+  transform: translateX(-54%);
 }
 
 .strategy-question-button[data-last-previewed="true"][data-marker-effect="pulse"]::before {
@@ -333,14 +338,19 @@ html[data-font="bold"] .question-stem {
 
 @keyframes strategy-capsule-gleam {
   0% {
-    background-position: 140% 50%;
-    transform: translateX(-28%);
+    opacity: 0;
+    transform: translateX(-62%);
   }
 
-  46%,
+  18%,
+  54% {
+    opacity: 0.95;
+  }
+
+  82%,
   100% {
-    background-position: -80% 50%;
-    transform: translateX(24%);
+    opacity: 0;
+    transform: translateX(62%);
   }
 }
 
