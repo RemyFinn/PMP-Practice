@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react'
 import { QuestionCard } from '../components/question-card'
@@ -12,6 +12,7 @@ export function PracticeView({
   mode,
   result,
   submittedElapsed,
+  questionStatuses = [],
   autoExpandStrategies,
   keyboardShortcuts,
   onBack,
@@ -23,7 +24,6 @@ export function PracticeView({
 }) {
   const [questionStartedAt, setQuestionStartedAt] = useState(() => Date.now())
   const [timerNow, setTimerNow] = useState(() => Date.now())
-  const [jumpValue, setJumpValue] = useState(String(index + 1))
   const progress = Math.round(((index + 1) / total) * 100)
   const currentElapsed = result?.elapsed_seconds ?? Math.max(0, Math.floor((timerNow - questionStartedAt) / 1000))
   const sessionElapsed = submittedElapsed + (result ? 0 : currentElapsed)
@@ -32,12 +32,7 @@ export function PracticeView({
     const now = Date.now()
     setQuestionStartedAt(now)
     setTimerNow(now)
-    setJumpValue(String(index + 1))
   }, [question.id, result])
-
-  useEffect(() => {
-    setJumpValue(String(index + 1))
-  }, [index])
 
   useEffect(() => {
     if (result) return undefined
@@ -55,22 +50,6 @@ export function PracticeView({
     const now = Date.now()
     setQuestionStartedAt(now)
     setTimerNow(now)
-  }
-
-  function commitQuestionLocator() {
-    const target = Number(jumpValue)
-    if (!Number.isFinite(target)) {
-      setJumpValue(String(index + 1))
-      return
-    }
-    const next = Math.max(1, Math.min(total, Math.trunc(target)))
-    setJumpValue(String(next))
-    onJump(next - 1)
-  }
-
-  function submitJump(event) {
-    event.preventDefault()
-    commitQuestionLocator()
   }
 
   return (
@@ -99,34 +78,13 @@ export function PracticeView({
               <RefreshCw size={15} />
             </Button>
           </div>
-          <div className="grid min-w-[230px] grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2">
-            <form
-              className="inline-flex h-8 items-center rounded-full border border-ink-950/[0.055] bg-paper-50/68 px-2 text-xs font-semibold text-ink-500"
-              onSubmit={submitJump}
-            >
-              <label className="leading-none" htmlFor="practice-question-locator">第</label>
-              <input
-                id="practice-question-locator"
-                className="h-7 w-10 bg-transparent text-center font-latin text-sm font-semibold tabular-nums text-ink-950 outline-none"
-                type="number"
-                min="1"
-                max={total}
-                value={jumpValue}
-                onChange={(event) => setJumpValue(event.target.value)}
-                onBlur={commitQuestionLocator}
-                aria-label="定位题号"
-              />
-              <span className="leading-none">题</span>
-            </form>
-            <strong className="font-latin text-sm tabular-nums">{index + 1}/{total}</strong>
-            <div className="h-1.5 overflow-hidden rounded-full bg-ink-950/10" aria-label={`进度 ${progress}%`}>
-              <motion.div
-                className="h-full rounded-full bg-ink-950"
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-              />
-            </div>
-          </div>
+          <QuestionLocator
+            index={index}
+            total={total}
+            progress={progress}
+            statuses={questionStatuses}
+            onJump={onJump}
+          />
         </div>
       </div>
 
@@ -155,5 +113,137 @@ export function PracticeView({
         }
       />
     </Screen>
+  )
+}
+
+function QuestionLocator({ index, total, progress, statuses, onJump }) {
+  const [open, setOpen] = useState(false)
+  const [draftIndex, setDraftIndex] = useState(index)
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    setDraftIndex(index)
+  }, [index])
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    function closeOnPointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false)
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    window.addEventListener('pointerdown', closeOnPointerDown)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      window.removeEventListener('pointerdown', closeOnPointerDown)
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  function openPanel() {
+    setDraftIndex(index)
+    setOpen(true)
+  }
+
+  function jumpTo(nextIndex, close = false) {
+    const safeIndex = Math.max(0, Math.min(total - 1, nextIndex))
+    setDraftIndex(safeIndex)
+    onJump(safeIndex)
+    if (close) setOpen(false)
+  }
+
+  return (
+    <div ref={rootRef} className="relative grid min-w-[230px] grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2">
+      <button
+        type="button"
+        className="inline-flex h-8 items-center rounded-full border border-ink-950/[0.055] bg-paper-50/68 px-3 text-sm font-semibold leading-none text-ink-950 shadow-hairline transition hover:bg-paper-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15"
+        onClick={openPanel}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+      >
+        第 <span className="mx-1 font-latin tabular-nums">{index + 1}</span> 题
+      </button>
+      <strong className="font-latin text-sm tabular-nums">{index + 1}/{total}</strong>
+      <button
+        type="button"
+        className="h-4 min-w-0 py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15"
+        onClick={openPanel}
+        aria-label={`打开题号面板，当前进度 ${progress}%`}
+      >
+        <span className="block h-1.5 overflow-hidden rounded-full bg-ink-950/10">
+          <motion.span
+            className="block h-full rounded-full bg-ink-950"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          />
+        </span>
+      </button>
+
+      {open && (
+        <motion.div
+          className="absolute right-0 top-full z-40 mt-2 w-[min(88vw,360px)] rounded-xl border border-ink-950/[0.055] bg-paper-50/95 p-3 text-sm shadow-quiet ring-1 ring-ink-950/[0.035] backdrop-blur-xl"
+          initial={{ opacity: 0, y: -4, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.985 }}
+          transition={{ duration: 0.14, ease: 'easeOut' }}
+          role="dialog"
+          aria-label="题号面板"
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="font-semibold text-ink-950">
+              第 <span className="font-latin tabular-nums">{draftIndex + 1}</span> / <span className="font-latin tabular-nums">{total}</span> 题
+            </div>
+            <div className="text-xs font-medium text-ink-400">当前队列序号</div>
+          </div>
+
+          <input
+            className="h-6 w-full accent-ink-950"
+            type="range"
+            min="1"
+            max={total}
+            value={draftIndex + 1}
+            onChange={(event) => setDraftIndex(Number(event.target.value) - 1)}
+            onPointerUp={(event) => jumpTo(Number(event.currentTarget.value) - 1)}
+            onKeyUp={(event) => {
+              if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) {
+                jumpTo(Number(event.currentTarget.value) - 1)
+              }
+            }}
+            aria-label="拖动定位题号"
+            aria-valuemin={1}
+            aria-valuemax={total}
+            aria-valuenow={draftIndex + 1}
+          />
+
+          <div className="mt-3 grid max-h-56 grid-cols-8 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-10" aria-label="题号列表">
+            {Array.from({ length: total }, (_, itemIndex) => {
+              const status = statuses[itemIndex]
+              const current = itemIndex === index
+              return (
+                <button
+                  key={itemIndex}
+                  type="button"
+                  className={[
+                    'grid h-8 min-w-0 place-items-center rounded-md font-latin text-xs font-semibold leading-none tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15',
+                    status === true ? 'bg-success-surface text-success-text ring-1 ring-success-border/25' : '',
+                    status === false ? 'bg-danger-surface text-danger-text ring-1 ring-danger-border/20' : '',
+                    status === undefined ? 'bg-ink-950/[0.045] text-ink-600 hover:bg-ink-950/[0.07] hover:text-ink-950' : '',
+                    current ? 'outline outline-2 outline-offset-1 outline-brass-600/45' : '',
+                  ].join(' ')}
+                  onClick={() => jumpTo(itemIndex, true)}
+                  aria-current={current ? 'true' : undefined}
+                >
+                  {itemIndex + 1}
+                </button>
+              )
+            })}
+          </div>
+        </motion.div>
+      )}
+    </div>
   )
 }

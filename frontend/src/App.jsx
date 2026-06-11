@@ -374,6 +374,7 @@ export default function App() {
                 mode={mode}
                 result={submitted.get(currentQuestion.id)}
                 submittedElapsed={submittedElapsed}
+                questionStatuses={questions.map((question) => submitted.get(question.id)?.is_correct)}
                 autoExpandStrategies={strategyAutoExpand}
                 keyboardShortcuts={keyboardShortcuts}
                 onBack={() => navigate(VIEW_TO_ROUTE[mode?.backView] || '/')}
