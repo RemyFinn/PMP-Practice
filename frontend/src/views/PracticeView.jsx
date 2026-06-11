@@ -57,14 +57,20 @@ export function PracticeView({
     setTimerNow(now)
   }
 
-  function submitJump(event) {
-    event.preventDefault()
+  function commitQuestionLocator() {
     const target = Number(jumpValue)
     if (!Number.isFinite(target)) {
       setJumpValue(String(index + 1))
       return
     }
-    onJump(Math.max(1, Math.min(total, Math.trunc(target))) - 1)
+    const next = Math.max(1, Math.min(total, Math.trunc(target)))
+    setJumpValue(String(next))
+    onJump(next - 1)
+  }
+
+  function submitJump(event) {
+    event.preventDefault()
+    commitQuestionLocator()
   }
 
   return (
@@ -93,7 +99,25 @@ export function PracticeView({
               <RefreshCw size={15} />
             </Button>
           </div>
-          <div className="grid min-w-[180px] grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+          <div className="grid min-w-[230px] grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2">
+            <form
+              className="inline-flex h-8 items-center rounded-full border border-ink-950/[0.055] bg-paper-50/68 px-2 text-xs font-semibold text-ink-500"
+              onSubmit={submitJump}
+            >
+              <label className="leading-none" htmlFor="practice-question-locator">第</label>
+              <input
+                id="practice-question-locator"
+                className="h-7 w-10 bg-transparent text-center font-latin text-sm font-semibold tabular-nums text-ink-950 outline-none"
+                type="number"
+                min="1"
+                max={total}
+                value={jumpValue}
+                onChange={(event) => setJumpValue(event.target.value)}
+                onBlur={commitQuestionLocator}
+                aria-label="定位题号"
+              />
+              <span className="leading-none">题</span>
+            </form>
             <strong className="font-latin text-sm tabular-nums">{index + 1}/{total}</strong>
             <div className="h-1.5 overflow-hidden rounded-full bg-ink-950/10" aria-label={`进度 ${progress}%`}>
               <motion.div
@@ -103,19 +127,6 @@ export function PracticeView({
               />
             </div>
           </div>
-          <form className="flex items-center justify-end gap-2" onSubmit={submitJump}>
-            <label className="sr-only" htmlFor="practice-jump-index">跳转到题号</label>
-            <input
-              id="practice-jump-index"
-              className="h-9 w-20 rounded-md border border-ink-950/[0.055] bg-paper-50/68 px-2 text-center font-latin text-sm font-semibold tabular-nums text-ink-950 outline-none transition focus:border-ink-950/[0.13] focus:bg-paper-50 focus:ring-2 focus:ring-ink-950/[0.025]"
-              type="number"
-              min="1"
-              max={total}
-              value={jumpValue}
-              onChange={(event) => setJumpValue(event.target.value)}
-            />
-            <Button variant="secondary" className="min-h-9 px-3" type="submit">跳题</Button>
-          </form>
         </div>
       </div>
 

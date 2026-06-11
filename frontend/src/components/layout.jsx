@@ -170,16 +170,30 @@ function SettingToggle({ active, onClick, icon, label }) {
     <button
       type="button"
       className={cn(
-        'inline-flex min-h-10 items-center gap-1.5 rounded-md border px-3 text-sm font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15',
+        'inline-flex min-h-10 items-center gap-2 rounded-full border py-1 pl-2.5 pr-3 text-sm font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15',
         active
-          ? 'border-ink-950 bg-ink-950 text-paper-50 shadow-hairline'
-          : 'border-ink-950/[0.055] bg-paper-50/68 text-ink-700 hover:bg-paper-100 hover:text-ink-950',
+          ? 'border-ink-950/[0.13] bg-ink-950/[0.045] text-ink-950 shadow-hairline'
+          : 'border-ink-950/[0.055] bg-paper-50/68 text-ink-600 hover:bg-paper-100 hover:text-ink-950',
       )}
       onClick={onClick}
       aria-pressed={active}
     >
       {icon}
       {label}
+      <span
+        className={cn(
+          'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition',
+          active ? 'bg-ink-950' : 'bg-ink-950/[0.12]',
+        )}
+        aria-hidden="true"
+      >
+        <span
+          className={cn(
+            'absolute left-0.5 size-4 rounded-full bg-paper-50 shadow-hairline transition-transform',
+            active && 'translate-x-4',
+          )}
+        />
+      </span>
     </button>
   )
 }

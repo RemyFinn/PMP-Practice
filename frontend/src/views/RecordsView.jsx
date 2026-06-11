@@ -174,17 +174,11 @@ function QuestionNumberButton({ question, index, result, current, onClick }) {
         answered && result?.is_correct && 'bg-success-surface text-success-text ring-1 ring-success-border/25',
         answered && !result?.is_correct && 'bg-danger-surface text-danger-text ring-1 ring-danger-border/20',
         current && 'outline outline-2 outline-offset-1 outline-brass-600/45',
-        question.is_wrong_active && 'shadow-hairline',
       )}
       onClick={onClick}
-      title={question.is_wrong_active ? `错题｜第 ${question.number} 题` : `第 ${question.number} 题`}
+      title={answered ? `本记录第 ${index + 1} 题｜原第 ${question.number} 题` : `本记录第 ${index + 1} 题｜未作答`}
     >
       {index + 1}
-      {question.is_wrong_active && (
-        <span className="absolute -right-1 -top-1 grid size-3 place-items-center rounded-full bg-danger-strong text-[8px] leading-none text-white">
-          !
-        </span>
-      )}
     </button>
   )
 }
@@ -192,6 +186,12 @@ function QuestionNumberButton({ question, index, result, current, onClick }) {
 function RecordQuestionDialog({ preview, onClose, onContinue }) {
   const open = Boolean(preview)
   const question = preview?.question
+    ? {
+        ...preview.question,
+        is_wrong_active: false,
+        wrong_count: 0,
+      }
+    : null
   const result = preview?.result
   return (
     <Dialog.Root open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
