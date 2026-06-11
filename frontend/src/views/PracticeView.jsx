@@ -24,6 +24,7 @@ export function PracticeView({
 }) {
   const [questionStartedAt, setQuestionStartedAt] = useState(() => Date.now())
   const [timerNow, setTimerNow] = useState(() => Date.now())
+  const [locatorOpen, setLocatorOpen] = useState(false)
   const progress = Math.round(((index + 1) / total) * 100)
   const currentElapsed = result?.elapsed_seconds ?? Math.max(0, Math.floor((timerNow - questionStartedAt) / 1000))
   const sessionElapsed = submittedElapsed + (result ? 0 : currentElapsed)
@@ -83,6 +84,8 @@ export function PracticeView({
             total={total}
             progress={progress}
             statuses={questionStatuses}
+            open={locatorOpen}
+            onOpenChange={setLocatorOpen}
             onJump={onJump}
           />
         </div>
@@ -92,6 +95,10 @@ export function PracticeView({
         question={question}
         result={result}
         onSubmit={(selectedOptions) => onSubmit(selectedOptions, getCurrentElapsed())}
+        questionLocatorTrigger={{
+          open: locatorOpen,
+          onOpen: () => setLocatorOpen(true),
+        }}
         autoExpandStrategies={autoExpandStrategies}
         keyboardShortcuts={keyboardShortcuts}
         onShortcutPrevious={onPrevious}
@@ -116,8 +123,7 @@ export function PracticeView({
   )
 }
 
-function QuestionLocator({ index, total, progress, statuses, onJump }) {
-  const [open, setOpen] = useState(false)
+function QuestionLocator({ index, total, progress, statuses, open, onOpenChange, onJump }) {
   const [draftIndex, setDraftIndex] = useState(index)
   const rootRef = useRef(null)
 
@@ -127,13 +133,14 @@ function QuestionLocator({ index, total, progress, statuses, onJump }) {
 
   useEffect(() => {
     if (!open) return undefined
+    setDraftIndex(index)
 
     function closeOnPointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false)
+      if (!rootRef.current?.contains(event.target)) onOpenChange(false)
     }
 
     function closeOnEscape(event) {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') onOpenChange(false)
     }
 
     window.addEventListener('pointerdown', closeOnPointerDown)
@@ -142,41 +149,35 @@ function QuestionLocator({ index, total, progress, statuses, onJump }) {
       window.removeEventListener('pointerdown', closeOnPointerDown)
       window.removeEventListener('keydown', closeOnEscape)
     }
-  }, [open])
+  }, [index, onOpenChange, open])
 
   function openPanel() {
     setDraftIndex(index)
-    setOpen(true)
+    onOpenChange(true)
   }
 
   function jumpTo(nextIndex, close = false) {
     const safeIndex = Math.max(0, Math.min(total - 1, nextIndex))
     setDraftIndex(safeIndex)
     onJump(safeIndex)
-    if (close) setOpen(false)
+    if (close) onOpenChange(false)
   }
 
   return (
-    <div ref={rootRef} className="relative grid min-w-[230px] grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2">
-      <button
-        type="button"
-        className="inline-flex h-8 items-center rounded-full border border-ink-950/[0.055] bg-paper-50/68 px-3 text-sm font-semibold leading-none text-ink-950 shadow-hairline transition hover:bg-paper-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15"
-        onClick={openPanel}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        第 <span className="mx-1 font-latin tabular-nums">{index + 1}</span> 题
-      </button>
+    <div ref={rootRef} className="relative grid min-w-[180px] grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
       <strong className="font-latin text-sm tabular-nums">{index + 1}/{total}</strong>
       <button
         type="button"
-        className="h-4 min-w-0 py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15"
+        className="group h-5 min-w-0 rounded-full py-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15"
         onClick={openPanel}
+        title="点击调整题号"
         aria-label={`打开题号面板，当前进度 ${progress}%`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
       >
-        <span className="block h-1.5 overflow-hidden rounded-full bg-ink-950/10">
+        <span className="block h-1.5 overflow-hidden rounded-full bg-ink-950/10 transition group-hover:bg-ink-950/15 group-hover:shadow-[0_0_0_4px_rgb(var(--ink-950)/0.035)]">
           <motion.span
-            className="block h-full rounded-full bg-ink-950"
+            className="block h-full rounded-full bg-ink-950 transition group-hover:bg-slateblue-700"
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
           />
@@ -219,7 +220,7 @@ function QuestionLocator({ index, total, progress, statuses, onJump }) {
             aria-valuenow={draftIndex + 1}
           />
 
-          <div className="mt-3 grid max-h-56 grid-cols-8 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-10" aria-label="题号列表">
+          <div className="question-locator-scroll mt-3 grid max-h-56 grid-cols-8 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-10" aria-label="题号列表">
             {Array.from({ length: total }, (_, itemIndex) => {
               const status = statuses[itemIndex]
               const current = itemIndex === index

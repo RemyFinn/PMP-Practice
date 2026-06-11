@@ -221,6 +221,28 @@ html[data-font="bold"] .question-stem {
     0 4px 10px rgb(var(--brass-600) / 0.2);
 }
 
+.question-locator-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ink-950) / 0.22) transparent;
+}
+
+.question-locator-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.question-locator-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.question-locator-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(var(--ink-950) / 0.16);
+}
+
+.question-locator-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgb(var(--ink-950) / 0.26);
+}
+
 @keyframes strategy-capsule-diffusion {
   0% {
     background-position: 8% 46%;
