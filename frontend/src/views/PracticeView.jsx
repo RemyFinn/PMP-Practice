@@ -95,10 +95,6 @@ export function PracticeView({
         question={question}
         result={result}
         onSubmit={(selectedOptions) => onSubmit(selectedOptions, getCurrentElapsed())}
-        questionLocatorTrigger={{
-          open: locatorOpen,
-          onOpen: () => setLocatorOpen(true),
-        }}
         autoExpandStrategies={autoExpandStrategies}
         keyboardShortcuts={keyboardShortcuts}
         onShortcutPrevious={onPrevious}

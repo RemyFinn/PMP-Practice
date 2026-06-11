@@ -15,7 +15,6 @@ export function QuestionCard({
   className,
   variant = 'page',
   resultKey,
-  questionLocatorTrigger,
   highlightedStrategyMatches,
   autoExpandStrategies = false,
   keyboardShortcuts = false,
@@ -111,7 +110,6 @@ export function QuestionCard({
       <div className={cn('flex flex-wrap items-center justify-between gap-3', isDialog ? 'mb-3' : 'mb-4')}>
         <QuestionMeta
           question={question}
-          questionLocatorTrigger={isDialog ? undefined : questionLocatorTrigger}
           showStrategies={showStrategies}
           onToggleStrategies={() => setShowStrategies((value) => !value)}
         />
@@ -191,7 +189,7 @@ export function QuestionCard({
   )
 }
 
-function QuestionMeta({ question, questionLocatorTrigger, showStrategies, onToggleStrategies }) {
+function QuestionMeta({ question, showStrategies, onToggleStrategies }) {
   const titleContent = (
     <>
       {EXAM_LABELS[question.exam_code] || question.exam_code.toUpperCase()} · 第 <span className="font-latin">{question.number}</span> 题
@@ -200,20 +198,7 @@ function QuestionMeta({ question, questionLocatorTrigger, showStrategies, onTogg
 
   return (
     <div className="flex flex-wrap items-center gap-2 leading-none">
-      {questionLocatorTrigger ? (
-        <button
-          type="button"
-          className="inline-flex h-7 items-center gap-1 rounded-full bg-slateblue-100 px-2.5 text-xs font-semibold leading-none tracking-[0.01em] text-slateblue-700 transition hover:bg-slateblue-700 hover:text-paper-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15"
-          onClick={questionLocatorTrigger.onOpen}
-          aria-haspopup="dialog"
-          aria-expanded={questionLocatorTrigger.open}
-          title="打开题号面板"
-        >
-          {titleContent}
-        </button>
-      ) : (
-        <Badge tone="blue">{titleContent}</Badge>
-      )}
+      <Badge tone="blue">{titleContent}</Badge>
       <Badge tone={question.is_multi ? 'accent' : 'neutral'}>{question.is_multi ? '多选' : '单选'}</Badge>
       {question.is_wrong_active && <Badge tone="danger">错题</Badge>}
       {Number(question.wrong_count) > 0 && (
