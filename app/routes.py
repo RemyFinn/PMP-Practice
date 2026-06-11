@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from psycopg.types.json import Jsonb
 
 from .auth import (
     clear_session_cookie,
@@ -20,6 +21,10 @@ from .models import (
     AttemptOut,
     ExamOut,
     LoginIn,
+    PracticeRecordCreate,
+    PracticeRecordOut,
+    PracticeRecordPatch,
+    PracticeRecordSummary,
     QuestionCreate,
     QuestionOut,
     QuestionUpdate,
@@ -131,6 +136,72 @@ def build_question(conn, row: dict) -> QuestionOut:
         strategies=fetch_question_strategies(conn, row["id"]),
         options=fetch_options(conn, row["id"]),
     )
+
+
+def normalize_question_ids(value: object) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    result: list[int] = []
+    for item in value:
+        try:
+            result.append(int(item))
+        except (TypeError, ValueError):
+            continue
+    return result
+
+
+def normalize_record_results(value: object) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def practice_record_summary(row: dict) -> PracticeRecordSummary:
+    question_ids = normalize_question_ids(row.get("question_ids"))
+    results = normalize_record_results(row.get("results"))
+    return PracticeRecordSummary(
+        id=row["id"],
+        session_key=row["session_key"],
+        mode_type=row["mode_type"],
+        exam_code=row.get("exam_code") or "",
+        label=row["label"],
+        current_index=int(row.get("current_index") or 0),
+        total_questions=len(question_ids),
+        answered_count=len(results),
+        created_at=str(row["created_at"]),
+        updated_at=str(row["updated_at"]),
+    )
+
+
+def practice_record_out(conn, row: dict, user_id: int) -> PracticeRecordOut:
+    summary = practice_record_summary(row)
+    question_ids = normalize_question_ids(row.get("question_ids"))
+    questions = []
+    for question_id in question_ids:
+        try:
+            questions.append(build_question(conn, fetch_question(conn, question_id, user_id)))
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
+    return PracticeRecordOut(
+        **summary.model_dump(),
+        question_ids=question_ids,
+        results=normalize_record_results(row.get("results")),
+        questions=questions,
+    )
+
+
+def fetch_practice_record(conn, record_id: int, user_id: int) -> dict:
+    row = conn.execute(
+        """
+        SELECT id, user_id, session_key, mode_type, exam_code, label, question_ids,
+               current_index, results, created_at, updated_at
+        FROM practice_records
+        WHERE id = %s AND user_id = %s
+        """,
+        (record_id, user_id),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="练习记录不存在")
+    return dict(row)
 
 
 @router.get("/health")
@@ -378,6 +449,102 @@ def list_strategies(
 def get_question(question_id: int, user: dict = Depends(current_user)) -> QuestionOut:
     with transaction() as conn:
         return build_question(conn, fetch_question(conn, question_id, int(user["id"])))
+
+
+@router.get("/practice-records", response_model=list[PracticeRecordSummary])
+def list_practice_records(user: dict = Depends(current_user)) -> list[PracticeRecordSummary]:
+    user_id = int(user["id"])
+    with transaction() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, session_key, mode_type, exam_code, label, question_ids,
+                   current_index, results, created_at, updated_at
+            FROM practice_records
+            WHERE user_id = %s
+            ORDER BY updated_at DESC, id DESC
+            """,
+            (user_id,),
+        ).fetchall()
+        return [practice_record_summary(dict(row)) for row in rows]
+
+
+@router.post("/practice-records", response_model=PracticeRecordOut)
+def create_practice_record(payload: PracticeRecordCreate, user: dict = Depends(current_user)) -> PracticeRecordOut:
+    user_id = int(user["id"])
+    question_ids = [int(question_id) for question_id in payload.question_ids]
+    current_index = min(payload.current_index, max(0, len(question_ids) - 1)) if question_ids else 0
+    with transaction() as conn:
+        row = conn.execute(
+            """
+            INSERT INTO practice_records (
+                user_id, session_key, mode_type, exam_code, label,
+                question_ids, current_index, results, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            RETURNING id, user_id, session_key, mode_type, exam_code, label, question_ids,
+                      current_index, results, created_at, updated_at
+            """,
+            (
+                user_id,
+                payload.session_key.strip(),
+                payload.mode_type.strip(),
+                payload.exam_code.strip(),
+                payload.label.strip(),
+                Jsonb(question_ids),
+                current_index,
+                Jsonb(payload.results),
+            ),
+        ).fetchone()
+        return practice_record_out(conn, dict(row), user_id)
+
+
+@router.get("/practice-records/{record_id}", response_model=PracticeRecordOut)
+def get_practice_record(record_id: int, user: dict = Depends(current_user)) -> PracticeRecordOut:
+    user_id = int(user["id"])
+    with transaction() as conn:
+        return practice_record_out(conn, fetch_practice_record(conn, record_id, user_id), user_id)
+
+
+@router.patch("/practice-records/{record_id}", response_model=PracticeRecordOut)
+def patch_practice_record(record_id: int, payload: PracticeRecordPatch, user: dict = Depends(current_user)) -> PracticeRecordOut:
+    user_id = int(user["id"])
+    with transaction() as conn:
+        current = fetch_practice_record(conn, record_id, user_id)
+        question_ids = normalize_question_ids(current.get("question_ids"))
+        next_index = int(current.get("current_index") or 0)
+        if payload.current_index is not None:
+            next_index = min(payload.current_index, max(0, len(question_ids) - 1)) if question_ids else 0
+        next_results = payload.results if payload.results is not None else normalize_record_results(current.get("results"))
+        row = conn.execute(
+            """
+            UPDATE practice_records
+            SET current_index = %s,
+                results = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s AND user_id = %s
+            RETURNING id, user_id, session_key, mode_type, exam_code, label, question_ids,
+                      current_index, results, created_at, updated_at
+            """,
+            (next_index, Jsonb(next_results), record_id, user_id),
+        ).fetchone()
+        return practice_record_out(conn, dict(row), user_id)
+
+
+@router.delete("/practice-records/{record_id}")
+def delete_practice_record(record_id: int, user: dict = Depends(current_user)) -> dict:
+    user_id = int(user["id"])
+    with transaction() as conn:
+        row = conn.execute(
+            """
+            DELETE FROM practice_records
+            WHERE id = %s AND user_id = %s
+            RETURNING id
+            """,
+            (record_id, user_id),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="练习记录不存在")
+        return {"id": record_id, "deleted": True}
 
 
 @router.post("/attempts", response_model=AttemptOut)

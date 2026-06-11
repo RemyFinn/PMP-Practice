@@ -3,10 +3,11 @@ import { AnimatePresence } from 'framer-motion'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from './api/client'
 import { EXAM_ORDER } from './constants'
-import { NoticeViewport, Sidebar, TopBar } from './components/layout'
+import { MobileNavDrawer, NoticeViewport, Sidebar, TopBar } from './components/layout'
 import { HomeView } from './views/HomeView'
 import { PracticeView } from './views/PracticeView'
 import { StrategyView } from './views/StrategyView'
+import { RecordsView } from './views/RecordsView'
 import { WrongItemsView } from './views/WrongItemsView'
 import { AdminView } from './views/AdminView'
 import { LoginView } from './views/LoginView'
@@ -15,6 +16,7 @@ import { UsersView } from './views/UsersView'
 const ROUTE_TO_VIEW = {
   '/': 'home',
   '/strategies': 'strategies',
+  '/records': 'records',
   '/wrong': 'wrong',
   '/admin': 'admin',
   '/users': 'users',
@@ -24,6 +26,7 @@ const ROUTE_TO_VIEW = {
 const VIEW_TO_ROUTE = {
   home: '/',
   strategies: '/strategies',
+  records: '/records',
   wrong: '/wrong',
   admin: '/admin',
   users: '/users',
@@ -39,6 +42,7 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [mode, setMode] = useState(null)
   const [submitted, setSubmitted] = useState(new Map())
+  const [practiceRecords, setPracticeRecords] = useState([])
   const [fontMode, setFontMode] = useState(() => {
     const saved = localStorage.getItem('pmp-font-mode')
     return saved === 'system' || saved === 'bold' ? saved : 'default'
@@ -47,6 +51,13 @@ export default function App() {
     const saved = localStorage.getItem('pmp-theme-mode')
     return saved === 'dark' ? 'dark' : 'light'
   })
+  const [strategyAutoExpand, setStrategyAutoExpand] = useState(() => {
+    return localStorage.getItem('pmp-strategy-auto-expand') === '1'
+  })
+  const [keyboardShortcuts, setKeyboardShortcuts] = useState(() => {
+    return localStorage.getItem('pmp-keyboard-shortcuts') === '1'
+  })
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState(null)
   const [user, setUser] = useState(null)
@@ -75,6 +86,60 @@ export default function App() {
     const data = await api('/api/exams')
     data.sort((a, b) => EXAM_ORDER.indexOf(a.code) - EXAM_ORDER.indexOf(b.code))
     setExams(data)
+  }
+
+  async function loadPracticeRecords() {
+    setPracticeRecords(await api('/api/practice-records'))
+  }
+
+  function recordSessionKey(nextMode) {
+    if (nextMode.type === 'exam') return `exam:${nextMode.examCode}`
+    if (nextMode.type === 'wrong') return 'wrong'
+    if (nextMode.type === 'mixed') return 'mixed'
+    return nextMode.type || 'practice'
+  }
+
+  function resultsObjectFromMap(map) {
+    return Object.fromEntries(Array.from(map.entries()).map(([questionId, result]) => [String(questionId), result]))
+  }
+
+  function resultMapFromObject(results) {
+    return new Map(
+      Object.entries(results || {}).map(([questionId, result]) => [Number(questionId), result]),
+    )
+  }
+
+  async function createPracticeRecord(nextMode, nextQuestions, startIndex = 0) {
+    const record = await api('/api/practice-records', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_key: recordSessionKey(nextMode),
+        mode_type: nextMode.type,
+        exam_code: nextMode.examCode || '',
+        label: nextMode.label || '练习',
+        question_ids: nextQuestions.map((question) => question.id),
+        current_index: startIndex,
+        results: {},
+      }),
+    })
+    await loadPracticeRecords()
+    return record
+  }
+
+  async function savePracticeRecord(recordId, nextIndex, nextSubmitted) {
+    if (!recordId) return
+    try {
+      await api(`/api/practice-records/${recordId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          current_index: nextIndex,
+          results: resultsObjectFromMap(nextSubmitted),
+        }),
+      })
+      await loadPracticeRecords()
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message })
+    }
   }
 
   async function loadMe() {
@@ -112,24 +177,52 @@ export default function App() {
         setNotice({ type: 'info', text: '当前模式暂时没有题目。' })
         return
       }
+      const record = await createPracticeRecord(nextMode, data, 0)
       setQuestions(data)
       setSubmitted(new Map())
       setCurrentIndex(0)
-      setMode(nextMode)
+      setMode({ ...nextMode, recordId: record.id, sessionKey: record.session_key })
       navigate('/practice')
     })
   }
 
-  function startPracticeFromQuestions(nextQuestions, startIndex = 0, nextMode = { type: 'wrong', label: '错题集' }) {
+  async function startPracticeFromQuestions(nextQuestions, startIndex = 0, nextMode = { type: 'wrong', label: '错题集' }) {
     if (nextQuestions.length === 0) {
       setNotice({ type: 'info', text: '当前没有可练习的题目。' })
       return
     }
+    const safeIndex = Math.max(0, Math.min(startIndex, nextQuestions.length - 1))
+    const record = await run(() => createPracticeRecord(nextMode, nextQuestions, safeIndex))
     setQuestions(nextQuestions)
     setSubmitted(new Map())
-    setCurrentIndex(Math.max(0, Math.min(startIndex, nextQuestions.length - 1)))
-    setMode(nextMode)
+    setCurrentIndex(safeIndex)
+    setMode({ ...nextMode, recordId: record.id, sessionKey: record.session_key })
     navigate('/practice')
+  }
+
+  async function continuePracticeRecord(recordId, options = {}) {
+    await run(async () => {
+      const record = await api(`/api/practice-records/${recordId}`)
+      if (record.questions.length === 0) {
+        setNotice({ type: 'info', text: '这条记录里的题目已经不可用。' })
+        return
+      }
+      const nextIndex = Math.max(0, Math.min(options.index ?? record.current_index, record.questions.length - 1))
+      const nextSubmitted = resultMapFromObject(record.results)
+      setQuestions(record.questions)
+      setSubmitted(nextSubmitted)
+      setCurrentIndex(nextIndex)
+      setMode({
+        type: record.mode_type,
+        examCode: record.exam_code || undefined,
+        label: record.label,
+        recordId: record.id,
+        sessionKey: record.session_key,
+        backView: options.backView || 'records',
+      })
+      if (nextIndex !== record.current_index) await savePracticeRecord(record.id, nextIndex, nextSubmitted)
+      navigate('/practice')
+    })
   }
 
   async function openQuestionFromStrategy(question) {
@@ -153,7 +246,10 @@ export default function App() {
   }
 
   async function refreshEverything() {
-    await run(loadExams, '统计已刷新')
+    await run(async () => {
+      await loadExams()
+      await loadPracticeRecords()
+    }, '统计已刷新')
   }
 
   async function logout() {
@@ -163,6 +259,7 @@ export default function App() {
       setQuestions([])
       setSubmitted(new Map())
       setMode(null)
+      setPracticeRecords([])
       navigate('/')
     }, '已退出登录')
   }
@@ -174,6 +271,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return
     loadExams().catch((error) => setNotice({ type: 'error', text: error.message }))
+    loadPracticeRecords().catch((error) => setNotice({ type: 'error', text: error.message }))
   }, [user])
 
   useEffect(() => {
@@ -186,6 +284,14 @@ export default function App() {
     root.dataset.theme = themeMode
     localStorage.setItem('pmp-theme-mode', themeMode)
   }, [themeMode])
+
+  useEffect(() => {
+    localStorage.setItem('pmp-strategy-auto-expand', strategyAutoExpand ? '1' : '0')
+  }, [strategyAutoExpand])
+
+  useEffect(() => {
+    localStorage.setItem('pmp-keyboard-shortcuts', keyboardShortcuts ? '1' : '0')
+  }, [keyboardShortcuts])
 
   if (!authChecked) {
     return <div className="grid min-h-dvh place-items-center bg-paper-50 text-sm font-medium text-ink-400">正在加载...</div>
@@ -211,6 +317,14 @@ export default function App() {
       <a className="skip-link" href="#main">跳到主要内容</a>
       <div className="grid min-h-dvh grid-cols-1 lg:grid-cols-[236px_minmax(0,1fr)]">
         <Sidebar view={view || 'home'} totals={totals} user={user} onLogout={logout} />
+        <MobileNavDrawer
+          open={mobileMenuOpen}
+          onOpenChange={setMobileMenuOpen}
+          view={view || 'home'}
+          totals={totals}
+          user={user}
+          onLogout={logout}
+        />
         <main id="main" className="min-w-0 px-4 py-4 sm:px-6 lg:px-8">
           <TopBar
             onRefresh={refreshEverything}
@@ -219,13 +333,27 @@ export default function App() {
             setFontMode={setFontMode}
             themeMode={themeMode}
             onToggleTheme={() => setThemeMode((current) => (current === 'dark' ? 'light' : 'dark'))}
+            strategyAutoExpand={strategyAutoExpand}
+            setStrategyAutoExpand={setStrategyAutoExpand}
+            keyboardShortcuts={keyboardShortcuts}
+            setKeyboardShortcuts={setKeyboardShortcuts}
+            onOpenMobileMenu={() => setMobileMenuOpen(true)}
           />
           <NoticeViewport notice={notice} onClose={() => setNotice(null)} insetSidebar />
           <AnimatePresence mode="wait">
             {!view && <Navigate key="not-found" to="/" replace />}
             {view === 'admin' && user.role !== 'admin' && <Navigate key="admin-denied" to="/" replace />}
             {view === 'users' && user.role !== 'admin' && <Navigate key="users-denied" to="/" replace />}
-            {view === 'home' && <HomeView key="home" exams={exams} totals={totals} onStart={startPractice} />}
+            {view === 'home' && (
+              <HomeView
+                key="home"
+                exams={exams}
+                totals={totals}
+                practiceRecords={practiceRecords}
+                onStart={startPractice}
+                onContinueRecord={(recordId) => continuePracticeRecord(recordId, { backView: 'home' })}
+              />
+            )}
             {view === 'strategies' && (
               <StrategyView
                 key="strategies"
@@ -246,9 +374,24 @@ export default function App() {
                 mode={mode}
                 result={submitted.get(currentQuestion.id)}
                 submittedElapsed={submittedElapsed}
+                autoExpandStrategies={strategyAutoExpand}
+                keyboardShortcuts={keyboardShortcuts}
                 onBack={() => navigate(VIEW_TO_ROUTE[mode?.backView] || '/')}
-                onPrevious={() => setCurrentIndex((value) => Math.max(0, value - 1))}
-                onNext={() => setCurrentIndex((value) => Math.min(questions.length - 1, value + 1))}
+                onPrevious={() => {
+                  const nextIndex = Math.max(0, currentIndex - 1)
+                  setCurrentIndex(nextIndex)
+                  savePracticeRecord(mode?.recordId, nextIndex, submitted)
+                }}
+                onNext={() => {
+                  const nextIndex = Math.min(questions.length - 1, currentIndex + 1)
+                  setCurrentIndex(nextIndex)
+                  savePracticeRecord(mode?.recordId, nextIndex, submitted)
+                }}
+                onJump={(nextIndex) => {
+                  const safeIndex = Math.max(0, Math.min(questions.length - 1, nextIndex))
+                  setCurrentIndex(safeIndex)
+                  savePracticeRecord(mode?.recordId, safeIndex, submitted)
+                }}
                 onSubmit={async (selectedOptions, elapsedSeconds) => {
                   const result = await run(async () => {
                     const response = await api('/api/attempts', {
@@ -260,7 +403,8 @@ export default function App() {
                         elapsed_seconds: elapsedSeconds,
                       }),
                     })
-                    setSubmitted((previous) => new Map(previous).set(currentQuestion.id, response))
+                    const nextSubmitted = new Map(submitted).set(currentQuestion.id, response)
+                    setSubmitted(nextSubmitted)
                     setQuestions((previous) =>
                       previous.map((item) =>
                         item.id === currentQuestion.id
@@ -275,6 +419,7 @@ export default function App() {
                       ),
                     )
                     await loadExams()
+                    await savePracticeRecord(mode?.recordId, currentIndex, nextSubmitted)
                     return response
                   })
                   return result
@@ -300,8 +445,19 @@ export default function App() {
                       return next
                     })
                     await loadExams()
+                    await savePracticeRecord(mode?.recordId, currentIndex, submitted)
                   }, '已移出错题集')
                 }}
+              />
+            )}
+            {view === 'records' && (
+              <RecordsView
+                key="records"
+                records={practiceRecords}
+                reloadRecords={loadPracticeRecords}
+                onContinueRecord={(recordId, options) => continuePracticeRecord(recordId, { ...options, backView: 'records' })}
+                notify={setNotice}
+                run={run}
               />
             )}
             {view === 'admin' && (

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -126,6 +127,40 @@ class WrongCountPatch(BaseModel):
 
 class AttemptCountPatch(BaseModel):
     attempt_count: int = Field(ge=0)
+
+
+class PracticeRecordCreate(BaseModel):
+    session_key: str = Field(min_length=1)
+    mode_type: str = Field(min_length=1)
+    exam_code: str = ""
+    label: str = Field(min_length=1)
+    question_ids: list[int] = Field(default_factory=list)
+    current_index: int = Field(default=0, ge=0)
+    results: dict[str, Any] = Field(default_factory=dict)
+
+
+class PracticeRecordPatch(BaseModel):
+    current_index: int | None = Field(default=None, ge=0)
+    results: dict[str, Any] | None = None
+
+
+class PracticeRecordSummary(BaseModel):
+    id: int
+    session_key: str
+    mode_type: str
+    exam_code: str = ""
+    label: str
+    current_index: int
+    total_questions: int
+    answered_count: int
+    created_at: str
+    updated_at: str
+
+
+class PracticeRecordOut(PracticeRecordSummary):
+    question_ids: list[int]
+    results: dict[str, Any] = Field(default_factory=dict)
+    questions: list[QuestionOut] = Field(default_factory=list)
 
 
 class OptionIn(BaseModel):

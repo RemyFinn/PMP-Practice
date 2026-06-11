@@ -12,14 +12,18 @@ export function PracticeView({
   mode,
   result,
   submittedElapsed,
+  autoExpandStrategies,
+  keyboardShortcuts,
   onBack,
   onPrevious,
   onNext,
+  onJump,
   onSubmit,
   onLearned,
 }) {
   const [questionStartedAt, setQuestionStartedAt] = useState(() => Date.now())
   const [timerNow, setTimerNow] = useState(() => Date.now())
+  const [jumpValue, setJumpValue] = useState(String(index + 1))
   const progress = Math.round(((index + 1) / total) * 100)
   const currentElapsed = result?.elapsed_seconds ?? Math.max(0, Math.floor((timerNow - questionStartedAt) / 1000))
   const sessionElapsed = submittedElapsed + (result ? 0 : currentElapsed)
@@ -28,7 +32,12 @@ export function PracticeView({
     const now = Date.now()
     setQuestionStartedAt(now)
     setTimerNow(now)
+    setJumpValue(String(index + 1))
   }, [question.id, result])
+
+  useEffect(() => {
+    setJumpValue(String(index + 1))
+  }, [index])
 
   useEffect(() => {
     if (result) return undefined
@@ -46,6 +55,16 @@ export function PracticeView({
     const now = Date.now()
     setQuestionStartedAt(now)
     setTimerNow(now)
+  }
+
+  function submitJump(event) {
+    event.preventDefault()
+    const target = Number(jumpValue)
+    if (!Number.isFinite(target)) {
+      setJumpValue(String(index + 1))
+      return
+    }
+    onJump(Math.max(1, Math.min(total, Math.trunc(target))) - 1)
   }
 
   return (
@@ -84,6 +103,19 @@ export function PracticeView({
               />
             </div>
           </div>
+          <form className="flex items-center justify-end gap-2" onSubmit={submitJump}>
+            <label className="sr-only" htmlFor="practice-jump-index">跳转到题号</label>
+            <input
+              id="practice-jump-index"
+              className="h-9 w-20 rounded-md border border-ink-950/[0.055] bg-paper-50/68 px-2 text-center font-latin text-sm font-semibold tabular-nums text-ink-950 outline-none transition focus:border-ink-950/[0.13] focus:bg-paper-50 focus:ring-2 focus:ring-ink-950/[0.025]"
+              type="number"
+              min="1"
+              max={total}
+              value={jumpValue}
+              onChange={(event) => setJumpValue(event.target.value)}
+            />
+            <Button variant="secondary" className="min-h-9 px-3" type="submit">跳题</Button>
+          </form>
         </div>
       </div>
 
@@ -91,6 +123,10 @@ export function PracticeView({
         question={question}
         result={result}
         onSubmit={(selectedOptions) => onSubmit(selectedOptions, getCurrentElapsed())}
+        autoExpandStrategies={autoExpandStrategies}
+        keyboardShortcuts={keyboardShortcuts}
+        onShortcutPrevious={onPrevious}
+        onShortcutNext={onNext}
         actions={
           <>
             <Button variant="icon" onClick={onPrevious} disabled={index === 0} aria-label="上一题">

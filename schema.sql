@@ -87,6 +87,21 @@ CREATE TABLE IF NOT EXISTS wrong_items (
     UNIQUE (user_id, question_id)
 );
 
+CREATE TABLE IF NOT EXISTS practice_records (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    session_key TEXT NOT NULL,
+    mode_type TEXT NOT NULL,
+    exam_code TEXT NOT NULL DEFAULT '',
+    label TEXT NOT NULL,
+    question_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    current_index INTEGER NOT NULL DEFAULT 0,
+    results JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS strategies (
     id SERIAL PRIMARY KEY,
     exam_code TEXT NOT NULL,
@@ -114,5 +129,7 @@ CREATE INDEX IF NOT EXISTS idx_questions_exam_number ON questions (exam_id, numb
 CREATE INDEX IF NOT EXISTS idx_questions_deleted ON questions (deleted_at);
 CREATE INDEX IF NOT EXISTS idx_attempts_user_question ON attempts (user_id, question_id);
 CREATE INDEX IF NOT EXISTS idx_wrong_items_user_active ON wrong_items (user_id, active);
+CREATE INDEX IF NOT EXISTS idx_practice_records_user_updated ON practice_records (user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_practice_records_user_session ON practice_records (user_id, session_key, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_strategies_exam ON strategies (exam_code, sort_order);
 CREATE INDEX IF NOT EXISTS idx_strategy_links_question ON strategy_question_links (question_id);

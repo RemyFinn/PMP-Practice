@@ -70,6 +70,19 @@
 - `PATCH /api/questions/{id}/attempt-count` 将目标作答次数转为 `attempt_count_delta = target - raw_attempt_count`。
 - 现状：手动调整作答次数会插入或更新一条 `wrong_items` 记录，插入时 `active=0`、`source='manual_adjustment'`。
 
+## 练习记录
+
+- `GET /api/practice-records` 需要登录；只返回当前用户自己的练习记录摘要。
+- `POST /api/practice-records` 需要登录；每次调用都会创建一条新的练习记录，不会覆盖同一 `session_key` 的旧记录。
+- `GET /api/practice-records/{record_id}` 需要登录；返回当前用户自己的完整练习记录、题目 id 队列和题目详情。
+- `PATCH /api/practice-records/{record_id}` 需要登录；只允许更新当前用户自己的记录。
+- `DELETE /api/practice-records/{record_id}` 需要登录；只删除当前用户自己的记录。
+- 不存在或不属于当前用户的练习记录返回 404 `练习记录不存在`。
+- 练习记录以一次练习为单位保存；不设置完成或归档状态。
+- 记录进度由 `answered_count / total_questions` 表示，已答数量来自 `results` 中已有结果的题目数。
+- `session_key` 用于默认继续入口分组，例如 `exam:sim7`、`mixed`、`wrong`。
+- `question_ids` 保存本次练习队列；`current_index` 保存当前停留的队列序号；`results` 保存每题提交结果快照。
+
 ## 题库管理 API
 
 - `POST /api/questions` 只允许管理员。
@@ -117,8 +130,18 @@
 - 刷新页面会丢失当前练习上下文。
 - 字体模式保存在 `localStorage.pmp-font-mode`。
 - 主题模式保存在 `localStorage.pmp-theme-mode`；未保存时默认浅色，顶栏图标按钮在浅色和深色之间切换。
+- 思路开关保存在 `localStorage.pmp-strategy-auto-expand`；未保存时默认关闭。
+- 快捷键开关保存在 `localStorage.pmp-keyboard-shortcuts`；未保存时默认关闭。
 - 策略布局保存在 `localStorage.pmp-strategy-layout`。
 - 字体模式通过顶栏三段分段控件在默认、系统和粗体模式之间切换；控件只显示“默认 / 系统 / 粗体”，不显示额外“字体”标签。
+- 顶栏公共设置区显示字体、主题图标、`思路`、`快捷键` 和刷新入口。
+- `思路` 开启后，进入新题时自动展开题目关联的解题思路；关闭时进入新题默认收起，用户仍可手动展开或收起。
+- `快捷键` 开启后只在练习页生效；输入框、下拉控件、按钮聚焦操作或弹层内不触发练习快捷键。
+- 练习页快捷键：`ArrowLeft` 切上一题，`ArrowRight` 切下一题，`1-6/A-F` 选择选项，`Enter` 提交多选题，`Space` 展开或收起思路；`A/D` 不用于切题。
+- 练习页跳题控件按当前队列序号跳转，合法范围为 `1` 到本次队列总题数。
+- 移动端导航使用汉堡抽屉；桌面端继续使用左侧固定栏。
+- `记录` 页按练习记录展示题号胶囊；未作答、已答对、已答错和当前错题状态使用不同视觉状态。
+- `记录` 页点击题号打开题目预览弹层，显示该记录中的作答结果和解析，并可继续这条记录。
 - 默认字体模式不定义字体变量，界面、题干、英文和数字均回退到浏览器/操作系统默认字体，并将练习题干字重设为 500；系统字体模式沿用微软雅黑/PingFang 系统中文字体栈；粗体模式基于系统字体模式，将练习题干字重设为 700。
 - 通用下拉选择器使用 Radix Select 官方结构，包含滚动按钮、Viewport、ItemText 和 ItemIndicator；前端不手写 body padding 或 margin 补偿。
 - 思路页套卷筛选是 React 内存态下拉多选；选择多个套卷时，思路按分类分组，同一分类下标题一致的思路合并为一张卡片，并在卡片内按套卷展示题号。

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, CheckCircle2, Lightbulb, XCircle } from 'lucide-react'
-import { EXAM_LABELS } from '../constants'
+import { EXAM_LABELS, OPTION_LABELS } from '../constants'
 import { cn } from '../lib/utils'
 import { formatSpent, letters } from '../utils/format'
 import { StrategyText } from './strategy-text'
@@ -16,6 +16,11 @@ export function QuestionCard({
   variant = 'page',
   resultKey,
   highlightedStrategyMatches,
+  autoExpandStrategies = false,
+  keyboardShortcuts = false,
+  readOnly = false,
+  onShortcutPrevious,
+  onShortcutNext,
 }) {
   const [selected, setSelected] = useState([])
   const [showStrategies, setShowStrategies] = useState(false)
@@ -23,16 +28,16 @@ export function QuestionCard({
 
   useEffect(() => {
     setSelected(result ? letters(result.selected_answer) : [])
-    setShowStrategies(false)
-  }, [question.id, result])
+    setShowStrategies(Boolean(autoExpandStrategies && question.strategies?.length > 0))
+  }, [question.id, result, autoExpandStrategies, question.strategies?.length])
 
   async function submit(nextSelected = selected) {
-    if (nextSelected.length === 0 || result) return
+    if (readOnly || nextSelected.length === 0 || result) return
     await onSubmit(nextSelected)
   }
 
   function toggle(label) {
-    if (result) return
+    if (readOnly || result) return
     if (question.is_multi) {
       setSelected((previous) =>
         previous.includes(label) ? previous.filter((item) => item !== label) : [...previous, label].sort(),
@@ -43,6 +48,52 @@ export function QuestionCard({
       submit(next)
     }
   }
+
+  useEffect(() => {
+    if (!keyboardShortcuts || isDialog) return undefined
+
+    function isEditableTarget(target) {
+      if (!(target instanceof HTMLElement)) return false
+      const tagName = target.tagName.toLowerCase()
+      return target.isContentEditable || ['input', 'textarea', 'select', 'button'].includes(tagName)
+    }
+
+    function handleKeyDown(event) {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || isEditableTarget(event.target)) return
+      const key = event.key
+      if (key === 'ArrowLeft') {
+        event.preventDefault()
+        onShortcutPrevious?.()
+        return
+      }
+      if (key === 'ArrowRight') {
+        event.preventDefault()
+        onShortcutNext?.()
+        return
+      }
+      if (key === ' ') {
+        event.preventDefault()
+        setShowStrategies((value) => !value)
+        return
+      }
+      if (key === 'Enter' && question.is_multi && !result && !readOnly) {
+        event.preventDefault()
+        submit()
+        return
+      }
+
+      const fromNumber = /^[1-6]$/.test(key) ? OPTION_LABELS[Number(key) - 1] : null
+      const fromLetter = /^[a-fA-F]$/.test(key) ? key.toUpperCase() : null
+      const nextLabel = fromNumber || fromLetter
+      if (nextLabel && question.options.some((option) => option.label === nextLabel) && !result && !readOnly) {
+        event.preventDefault()
+        toggle(nextLabel)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [keyboardShortcuts, isDialog, question, result, selected, readOnly, onShortcutPrevious, onShortcutNext])
 
   return (
     <motion.article
@@ -123,7 +174,7 @@ export function QuestionCard({
         })}
       </div>
 
-      {question.is_multi && !result && (
+      {question.is_multi && !result && !readOnly && (
         <div className="mt-4 flex justify-end border-t border-ink-950/[0.035] pt-4">
           <Button variant="primary" onClick={() => submit()} disabled={selected.length === 0} className="w-full sm:w-auto">
             提交答案

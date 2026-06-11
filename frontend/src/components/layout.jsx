@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
@@ -7,15 +8,19 @@ import {
   CheckCircle2,
   Database,
   GraduationCap,
+  History,
+  Keyboard,
   Lightbulb,
   Layers3,
   ListChecks,
   LogOut,
+  Menu,
   Moon,
   RefreshCw,
   Sun,
   Target,
   Users,
+  X,
   XCircle,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
@@ -30,7 +35,7 @@ const FONT_MODE_OPTIONS = [
 export function Sidebar({ view, totals, user, onLogout }) {
   const isAdmin = user?.role === 'admin'
   return (
-    <aside className="sidebar-shell relative border-b border-ink-950/[0.06] px-4 py-4 backdrop-blur-2xl after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-transparent after:via-ink-950/[0.07] after:to-transparent lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:px-5 lg:after:bottom-6 lg:after:left-auto lg:after:right-0 lg:after:top-6 lg:after:h-auto lg:after:w-px lg:after:bg-gradient-to-b">
+    <aside className="sidebar-shell relative hidden border-b border-ink-950/[0.06] px-4 py-4 backdrop-blur-2xl after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-transparent after:via-ink-950/[0.07] after:to-transparent lg:sticky lg:top-0 lg:block lg:h-dvh lg:border-b-0 lg:px-5 lg:after:bottom-6 lg:after:left-auto lg:after:right-0 lg:after:top-6 lg:after:h-auto lg:after:w-px lg:after:bg-gradient-to-b">
       <div className="flex items-center gap-3">
         <div className="grid size-10 place-items-center rounded-lg bg-ink-950 text-paper-50">
           <GraduationCap size={22} />
@@ -41,12 +46,8 @@ export function Sidebar({ view, totals, user, onLogout }) {
         </div>
       </div>
 
-      <nav className="mt-5 grid grid-cols-4 gap-2 lg:grid-cols-1">
-        <NavItem active={view === 'home'} to="/" icon={<BookOpen size={17} />} label="练习" />
-        <NavItem active={view === 'strategies'} to="/strategies" icon={<Lightbulb size={17} />} label="思路" />
-        <NavItem active={view === 'wrong'} to="/wrong" icon={<Target size={17} />} label="错题" />
-        {isAdmin && <NavItem active={view === 'admin'} to="/admin" icon={<Database size={17} />} label="题库" />}
-        {isAdmin && <NavItem active={view === 'users'} to="/users" icon={<Users size={17} />} label="用户" />}
+      <nav className="mt-5 grid gap-2">
+        <NavItems view={view} isAdmin={isAdmin} />
       </nav>
 
       <div className="mt-5 grid grid-cols-3 gap-2 lg:grid-cols-1">
@@ -68,9 +69,22 @@ export function Sidebar({ view, totals, user, onLogout }) {
   )
 }
 
-function NavItem({ active, to, icon, label }) {
+function NavItems({ view, isAdmin, onNavigate }) {
   return (
-    <Button as={Link} to={to} variant={active ? 'primary' : 'ghost'} className="justify-start">
+    <>
+      <NavItem active={view === 'home'} to="/" icon={<BookOpen size={17} />} label="练习" onClick={onNavigate} />
+      <NavItem active={view === 'strategies'} to="/strategies" icon={<Lightbulb size={17} />} label="思路" onClick={onNavigate} />
+      <NavItem active={view === 'records'} to="/records" icon={<History size={17} />} label="记录" onClick={onNavigate} />
+      <NavItem active={view === 'wrong'} to="/wrong" icon={<Target size={17} />} label="错题" onClick={onNavigate} />
+      {isAdmin && <NavItem active={view === 'admin'} to="/admin" icon={<Database size={17} />} label="题库" onClick={onNavigate} />}
+      {isAdmin && <NavItem active={view === 'users'} to="/users" icon={<Users size={17} />} label="用户" onClick={onNavigate} />}
+    </>
+  )
+}
+
+function NavItem({ active, to, icon, label, onClick }) {
+  return (
+    <Button as={Link} to={to} variant={active ? 'primary' : 'ghost'} className="justify-start" onClick={onClick}>
       {icon}
       {label}
     </Button>
@@ -89,15 +103,32 @@ function Metric({ label, value, icon }) {
   )
 }
 
-export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, onToggleTheme }) {
+export function TopBar({
+  onRefresh,
+  loading,
+  fontMode,
+  setFontMode,
+  themeMode,
+  onToggleTheme,
+  strategyAutoExpand,
+  setStrategyAutoExpand,
+  keyboardShortcuts,
+  setKeyboardShortcuts,
+  onOpenMobileMenu,
+}) {
   const isDark = themeMode === 'dark'
   return (
     <header className="mx-auto mb-4 flex w-full max-w-6xl flex-wrap items-center justify-between gap-3">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-400">PMP Practice</p>
-        <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">练习</h2>
+      <div className="flex min-w-0 items-center gap-3">
+        <Button variant="icon" className="size-10 lg:hidden" onClick={onOpenMobileMenu} aria-label="打开菜单" title="菜单">
+          <Menu size={17} />
+        </Button>
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-400">PMP Practice</p>
+          <h2 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">练习</h2>
+        </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
           variant="icon"
           className="size-10"
@@ -113,12 +144,118 @@ export function TopBar({ onRefresh, loading, fontMode, setFontMode, themeMode, o
           options={FONT_MODE_OPTIONS}
           ariaLabel="切换界面字体"
         />
+        <SettingToggle
+          active={strategyAutoExpand}
+          onClick={() => setStrategyAutoExpand((value) => !value)}
+          icon={<Lightbulb size={14} />}
+          label="思路"
+        />
+        <SettingToggle
+          active={keyboardShortcuts}
+          onClick={() => setKeyboardShortcuts((value) => !value)}
+          icon={<Keyboard size={14} />}
+          label="快捷键"
+        />
         <Button variant="ghost" onClick={onRefresh} disabled={loading}>
           <RefreshCw size={16} className={cn(loading && 'animate-spin')} />
           刷新
         </Button>
       </div>
     </header>
+  )
+}
+
+function SettingToggle({ active, onClick, icon, label }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'inline-flex min-h-10 items-center gap-1.5 rounded-md border px-3 text-sm font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-800/15',
+        active
+          ? 'border-ink-950 bg-ink-950 text-paper-50 shadow-hairline'
+          : 'border-ink-950/[0.055] bg-paper-50/68 text-ink-700 hover:bg-paper-100 hover:text-ink-950',
+      )}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      {icon}
+      {label}
+    </button>
+  )
+}
+
+export function MobileNavDrawer({ open, onOpenChange, view, totals, user, onLogout }) {
+  const isAdmin = user?.role === 'admin'
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <AnimatePresence>
+          {open && (
+            <>
+              <Dialog.Overlay forceMount asChild>
+                <motion.div
+                  className="fixed inset-0 z-50 bg-ink-950/18 backdrop-blur-sm lg:hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                />
+              </Dialog.Overlay>
+              <Dialog.Content forceMount asChild>
+                <motion.aside
+                  className="fixed left-0 top-0 z-50 flex h-dvh w-[min(86vw,320px)] flex-col overflow-hidden bg-paper-50 shadow-quiet ring-1 ring-ink-950/[0.08] lg:hidden"
+                  initial={{ x: '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-100%' }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                >
+                  <Dialog.Title className="sr-only">移动端菜单</Dialog.Title>
+                  <Dialog.Description className="sr-only">导航、统计和账号操作</Dialog.Description>
+                  <div className="flex items-center justify-between gap-3 border-b border-ink-950/[0.055] px-4 py-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="grid size-10 place-items-center rounded-lg bg-ink-950 text-paper-50">
+                        <GraduationCap size={22} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-base font-semibold tracking-tight">PMP 练习系统</div>
+                        <div className="text-xs font-medium text-ink-400">Mobile menu</div>
+                      </div>
+                    </div>
+                    <Dialog.Close asChild>
+                      <Button variant="icon" className="size-9" aria-label="关闭菜单">
+                        <X size={16} />
+                      </Button>
+                    </Dialog.Close>
+                  </div>
+
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                    <nav className="grid gap-2">
+                      <NavItems view={view} isAdmin={isAdmin} onNavigate={() => onOpenChange(false)} />
+                    </nav>
+                    <div className="mt-5 grid grid-cols-3 gap-2">
+                      <Metric label="题目" value={totals.questions} icon={<Layers3 size={15} />} />
+                      <Metric label="错题" value={totals.wrong} icon={<Target size={15} />} />
+                      <Metric label="记录" value={totals.attempts} icon={<ListChecks size={15} />} />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-ink-950/[0.055] p-4">
+                    <div className="flex items-center justify-between gap-2 rounded-xl bg-ink-950/[0.035] px-3 py-3 text-sm text-ink-600">
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold text-ink-900">{user?.display_name || user?.username}</div>
+                        <div className="mt-0.5 text-xs text-ink-400">{isAdmin ? '管理员' : '普通用户'}</div>
+                      </div>
+                      <Button variant="icon" className="size-8" onClick={onLogout} aria-label="退出登录" title="退出登录">
+                        <LogOut size={15} />
+                      </Button>
+                    </div>
+                  </div>
+                </motion.aside>
+              </Dialog.Content>
+            </>
+          )}
+        </AnimatePresence>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 

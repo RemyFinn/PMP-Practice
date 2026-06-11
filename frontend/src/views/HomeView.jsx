@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, BookOpen, Shuffle, Target } from 'lucide-react'
+import { ArrowRight, BookOpen, History, Shuffle, Target } from 'lucide-react'
 import { Badge, Screen, panelClass } from '../components/ui'
+import { formatDateTime } from '../utils/format'
 
-export function HomeView({ exams, totals, onStart }) {
+export function HomeView({ exams, totals, practiceRecords = [], onStart, onContinueRecord }) {
+  const latestRecords = latestBySession(practiceRecords).slice(0, 4)
   return (
     <Screen className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
       <section className={panelClass('bg-paper-50/58 p-4 sm:p-5')}>
@@ -13,7 +15,33 @@ export function HomeView({ exams, totals, onStart }) {
           </div>
           <Badge tone="blue">PostgreSQL · 个人记录</Badge>
         </div>
-      <div className="divide-y divide-ink-950/[0.035]">
+        {latestRecords.length > 0 && (
+          <div className="mb-4 rounded-lg bg-ink-950/[0.025] p-3 ring-1 ring-ink-950/[0.035]">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink-800">
+              <History size={16} />
+              继续做题
+            </div>
+            <div className="grid gap-2">
+              {latestRecords.map((record) => (
+                <button
+                  key={record.id}
+                  type="button"
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md bg-paper-50/68 px-3 py-2 text-left transition hover:bg-paper-100"
+                  onClick={() => onContinueRecord(record.id)}
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-ink-900">{record.label}</div>
+                    <div className="mt-0.5 text-xs font-medium text-ink-400">
+                      {record.answered_count}/{record.total_questions} · {formatDateTime(record.updated_at)}
+                    </div>
+                  </div>
+                  <ArrowRight size={16} className="text-ink-400" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="divide-y divide-ink-950/[0.035]">
           {exams.map((exam) => (
             <ModeRow
               key={exam.code}
@@ -51,6 +79,14 @@ export function HomeView({ exams, totals, onStart }) {
       </aside>
     </Screen>
   )
+}
+
+function latestBySession(records) {
+  const map = new Map()
+  for (const record of records) {
+    if (!map.has(record.session_key)) map.set(record.session_key, record)
+  }
+  return Array.from(map.values())
 }
 
 function DashboardNumber({ label, value }) {

@@ -372,6 +372,106 @@ class CurrentBehaviorApiFeatureTest(unittest.TestCase):
         self.assertEqual(audit["attempts"], 3)
         self.assertEqual(audit["active"], 1)
 
+    def test_practice_records_user_scoped_multiple_records_and_patch_lifecycle(self):
+        learner_id = self.seed_user("learner")
+        other_id = self.seed_user("other")
+        exam_id = self.seed_exam("sim7", "模拟七")
+        q1 = self.seed_question(exam_id, 1, "A", stem="Question 1")
+        q2 = self.seed_question(exam_id, 2, "B", stem="Question 2")
+
+        anonymous = self.client.get("/api/practice-records")
+        self.assertEqual(anonymous.status_code, 401)
+
+        self.login("learner", "learner-password")
+        first = self.client.post(
+            "/api/practice-records",
+            json={
+                "session_key": "exam:sim7",
+                "mode_type": "exam",
+                "exam_code": "sim7",
+                "label": "模拟七",
+                "question_ids": [q1, q2],
+            },
+        )
+        self.assertEqual(first.status_code, 200, first.text)
+        second = self.client.post(
+            "/api/practice-records",
+            json={
+                "session_key": "exam:sim7",
+                "mode_type": "exam",
+                "exam_code": "sim7",
+                "label": "模拟七重新开始",
+                "question_ids": [q2, q1],
+            },
+        )
+        self.assertEqual(second.status_code, 200, second.text)
+        self.assertNotEqual(first.json()["id"], second.json()["id"])
+
+        records = self.client.get("/api/practice-records")
+        self.assertEqual(records.status_code, 200)
+        self.assertEqual(len(records.json()), 2)
+        self.assertEqual({record["session_key"] for record in records.json()}, {"exam:sim7"})
+        self.assertTrue(all(record["total_questions"] == 2 for record in records.json()))
+        self.assertTrue(all(record["answered_count"] == 0 for record in records.json()))
+        self.assertTrue(all(record["updated_at"] for record in records.json()))
+
+        result = {
+            str(q1): {
+                "question_id": q1,
+                "selected_answer": "A",
+                "correct_answer": "A",
+                "is_correct": True,
+                "explanation": "Explanation 1",
+                "elapsed_seconds": 12,
+            }
+        }
+        patched = self.client.patch(
+            f"/api/practice-records/{first.json()['id']}",
+            json={"current_index": 1, "results": result},
+        )
+        self.assertEqual(patched.status_code, 200, patched.text)
+        self.assertEqual(patched.json()["current_index"], 1)
+        self.assertEqual(patched.json()["answered_count"], 1)
+        self.assertEqual(patched.json()["results"], result)
+        self.assertEqual([question["id"] for question in patched.json()["questions"]], [q1, q2])
+
+        fetched = self.client.get(f"/api/practice-records/{first.json()['id']}")
+        self.assertEqual(fetched.status_code, 200)
+        self.assertEqual(fetched.json()["results"], result)
+
+        self.client.cookies.clear()
+        self.login("other", "learner-password")
+        hidden = self.client.get(f"/api/practice-records/{first.json()['id']}")
+        self.assertEqual(hidden.status_code, 404)
+        self.assertEqual(hidden.json()["detail"], "练习记录不存在")
+
+        with self.db() as conn:
+            row = conn.execute(
+                """
+                INSERT INTO practice_records (
+                    user_id, session_key, mode_type, exam_code, label,
+                    question_ids, current_index, results
+                )
+                VALUES (%s, 'mixed', 'mixed', '', 'Other mixed', '[%s]'::jsonb, 0, '{}'::jsonb)
+                RETURNING id
+                """ % ("%s", q1),
+                (other_id,),
+            ).fetchone()
+            conn.commit()
+            other_record_id = int(row["id"])
+
+        self.assertEqual(self.client.get(f"/api/practice-records/{other_record_id}").status_code, 200)
+        denied_delete = self.client.delete(f"/api/practice-records/{first.json()['id']}")
+        self.assertEqual(denied_delete.status_code, 404)
+
+        self.client.cookies.clear()
+        self.login("learner", "learner-password")
+        deleted = self.client.delete(f"/api/practice-records/{first.json()['id']}")
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual(deleted.json(), {"id": first.json()["id"], "deleted": True})
+        remaining = self.client.get("/api/practice-records")
+        self.assertEqual([record["id"] for record in remaining.json()], [second.json()["id"]])
+
     def test_wrong_item_patch_and_manual_count_adjustments_current_side_effects(self):
         user_id = self.seed_user("learner")
         exam_id = self.seed_exam("sim7")
