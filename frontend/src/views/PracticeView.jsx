@@ -216,7 +216,7 @@ function QuestionLocator({ index, total, progress, statuses, open, onOpenChange,
             aria-valuenow={draftIndex + 1}
           />
 
-          <div className="question-locator-scroll mt-3 grid max-h-56 grid-cols-8 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-10" aria-label="题号列表">
+          <div className="question-locator-scroll mt-2 grid max-h-56 grid-cols-8 gap-1.5 overflow-y-auto p-1 sm:grid-cols-10" aria-label="题号列表">
             {Array.from({ length: total }, (_, itemIndex) => {
               const status = statuses[itemIndex]
               const current = itemIndex === index
@@ -229,7 +229,7 @@ function QuestionLocator({ index, total, progress, statuses, open, onOpenChange,
                     status === true ? 'bg-success-surface text-success-text ring-1 ring-success-border/25' : '',
                     status === false ? 'bg-danger-surface text-danger-text ring-1 ring-danger-border/20' : '',
                     status === undefined ? 'bg-ink-950/[0.045] text-ink-600 hover:bg-ink-950/[0.07] hover:text-ink-950' : '',
-                    current ? 'outline outline-2 outline-offset-1 outline-brass-600/45' : '',
+                    current ? 'ring-2 ring-brass-600/55 shadow-[0_0_0_3px_rgb(var(--brass-100)/0.72),0_5px_12px_rgb(var(--brass-600)/0.16)]' : '',
                   ].join(' ')}
                   onClick={() => jumpTo(itemIndex, true)}
                   aria-current={current ? 'true' : undefined}
