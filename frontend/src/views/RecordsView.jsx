@@ -11,6 +11,7 @@ import { formatDateTime, formatSpent } from '../utils/format'
 export function RecordsView({ records, reloadRecords, onContinueRecord, notify, run }) {
   const [openRecordIds, setOpenRecordIds] = useState(new Set())
   const [recordDetails, setRecordDetails] = useState(new Map())
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [preview, setPreview] = useState(null)
 
   async function loadRecord(recordId) {
@@ -49,6 +50,7 @@ export function RecordsView({ records, reloadRecords, onContinueRecord, notify, 
         next.delete(recordId)
         return next
       })
+      setConfirmDeleteId(null)
       await reloadRecords()
     }, '练习记录已删除')
   }
@@ -106,9 +108,21 @@ export function RecordsView({ records, reloadRecords, onContinueRecord, notify, 
                     <History size={16} />
                     {open ? '收起' : '展开'}
                   </Button>
-                  <Button variant="ghost" onClick={() => deleteRecord(record.id)} aria-label="删除记录" title="删除记录">
-                    <Trash2 size={16} />
-                  </Button>
+                  {confirmDeleteId === record.id ? (
+                    <>
+                      <Button variant="ghost" onClick={() => setConfirmDeleteId(null)}>
+                        取消
+                      </Button>
+                      <Button variant="danger" onClick={() => deleteRecord(record.id)}>
+                        <Trash2 size={16} />
+                        确认删除
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="ghost" onClick={() => setConfirmDeleteId(record.id)} aria-label="删除记录" title="删除记录">
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
                 </div>
               </div>
 
